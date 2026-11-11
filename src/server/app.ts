@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import { extname, resolve } from "node:path";
+
 import Fastify, { type FastifyInstance } from "fastify";
 
 import { registerHealthRoutes } from "./routes/health.js";
@@ -12,6 +15,14 @@ export interface ServerConfig {
   logLevel: "error" | "warn" | "info";
   trustProxy: false | number;
 }
+
+interface AppOptions {
+  staticRoot: string;
+}
+
+const DEFAULT_APP_OPTIONS: AppOptions = {
+  staticRoot: resolve(process.cwd(), "dist/client"),
+};
 
 function invalidConfiguration(): Error {
   return new Error("Invalid server configuration");
@@ -102,6 +113,7 @@ export function serializeError(value: unknown): { error: string } {
 
 export function buildApp(
   config: ServerConfig = parseServerConfig(process.env),
+  options: AppOptions = DEFAULT_APP_OPTIONS,
 ): FastifyInstance {
   let trustProxy: false | ((address: string, hop: number) => boolean) = false;
   if (config.trustProxy !== false) {
@@ -144,6 +156,36 @@ export function buildApp(
     }
     app.log.error({ error: "internal_error" }, "request_failed");
     await reply.code(500).send({ error: "internal_error" });
+  });
+
+  app.get("/", async (_request, reply) => {
+    try {
+      const page = await readFile(resolve(options.staticRoot, "index.html"));
+      await reply.type("text/html; charset=utf-8").send(page);
+    } catch {
+      await reply.code(404).type("text/plain").send("Not Found");
+    }
+  });
+
+  app.get<{ Params: { "*": string } }>("/assets/*", async (request, reply) => {
+    const fileName = request.params["*"];
+    if (!/^[A-Za-z0-9._-]+$/.test(fileName)) {
+      await reply.code(404).type("text/plain").send("Not Found");
+      return;
+    }
+
+    try {
+      const asset = await readFile(
+        resolve(options.staticRoot, "assets", fileName),
+      );
+      const contentType =
+        extname(fileName) === ".css"
+          ? "text/css; charset=utf-8"
+          : "text/javascript; charset=utf-8";
+      await reply.type(contentType).send(asset);
+    } catch {
+      await reply.code(404).type("text/plain").send("Not Found");
+    }
   });
 
   void app.register(registerHealthRoutes);
