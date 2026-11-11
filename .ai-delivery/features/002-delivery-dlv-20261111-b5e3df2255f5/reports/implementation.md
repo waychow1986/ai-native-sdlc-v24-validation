@@ -342,3 +342,73 @@ CI、image publication、远程部署、Candidate identity、Independent QA、UA
 **本批次完成 Phase 4 US2 的 T019～T025，并在 7 项边界处停止。** 测试先于生产实现创建并保留预期失败证据；最终 dependency setup、format、TypeScript、lint、前后端 build、六类聚合测试、真实本地 Chromium 和依赖审计在当前 Coding sandbox 通过。用户可见覆盖新增 IQA-002 首次成功旅程，不声称失败恢复、runtime、部署或下游门禁完成。
 
 下一依赖就绪工作从 Phase 5 的 test-first T026～T031 开始。尚未到期的 viewport/zoom 缓解、精确 Node 24 重跑及全部平台下游证据继续保留，不部署、不审批、不合并。
+
+## Coding Session coding-attempt-01-batch-06-operation-022
+
+### 实施范围
+
+本 Session 采用 `coding-continuation` 模式，按 test-first 顺序完成 Phase 5 US3 的 T026～T032，共 7 项，未开始 Phase 6。先创建 Fetch adapter 失败 contract、真实本地进程 recovery integration、失败与重试 functional、IQA-003～IQA-007 Playwright end-to-end 和 generation/component 测试；依赖安装后取得因 failure 状态与重试实现尚不存在而失败的预期证据，再实现统一失败归一化、明确失败提示、唯一原生重试按钮、递增 generation、处理中重复操作防护、连续失败恢复及旧 generation 迟到结果丢弃。
+
+依据 Stage Gate override 的推荐缓解，T030 的真实 Chromium 场景同时在 320 与 1440 CSS 像素及 200% zoom 下检查标题和当前状态可见性，不使用 jsdom functional 结果冒充布局证据。Phase 6 的 T033～T034 仍保持未完成，后续须完成其完整样式收口与对应证据。
+
+### 变更文件
+
+| 路径 | 变更 | 来源任务 |
+|---|---|---|
+| `tests/contract/status-client.test.ts` | 新增网络失败、2500 ms 超时、非 200、错误 media type、无效 JSON、schema 不匹配和 Abort 的安全归一化 contract test | T026 |
+| `tests/integration/status-recovery.test.ts` | 新增浏览器请求阻断、连续失败、解除阻断后经页面按钮恢复及单次请求计数的真实本地 Fastify integration test | T027 |
+| `tests/functional/status-recovery.test.tsx` | 新增明确失败、唯一重试、无自动重试、键盘操作、焦点、alert、隐私、连续失败和 axe 断言 | T028 |
+| `tests/e2e/status-page.spec.ts` | 追加 IQA-003～IQA-007 的真实 Chromium 网络阻断、重试恢复、连续失败、计时、请求计数、axe、键盘、焦点、viewport/zoom、trace 与 screenshot 证据 | T029～T030 |
+| `tests/component/App.test.tsx` | 追加 failure reducer、人工重试、递增 generation、处理中无重复按钮及迟到旧结果丢弃测试 | T031 |
+| `src/client/status-client.ts` | 补齐调用前已 Abort 的统一中止处理，并保持所有失败只暴露稳定错误类别 | T032 |
+| `src/client/App.tsx` | 实现 failure 状态、当前 generation 结果提交、失败提示、唯一重试按钮、重试 loading 状态和连续恢复 | T032 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/tasks-implementation.md` | 仅将具有实现与通过证据的 T026～T032 checkbox 改为完成 | T026～T032 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/reports/implementation.md` | 在不可变历史前缀末尾追加本 Session 证据 | Coding 账本契约 |
+
+### 需求与场景覆盖
+
+| Intent / Specification Scenario | 实现路径 | 测试路径 | 结果 |
+|---|---|---|---|
+| US-003 / FR-004～FR-006 / AC-004～AC-007 / TD-004～TD-007 | `src/client/status-client.ts`、`src/client/App.tsx` | `tests/contract/status-client.test.ts`、`tests/component/App.test.tsx`、`tests/integration/status-recovery.test.ts` | 所有无效结果统一进入无技术详情的 failure；仅失败视图按钮创建下一 generation，每次操作一次请求，连续失败后仍可恢复，旧 generation 结果被丢弃；contract 19/19、component 13/13、integration 3/3 通过 |
+| IQA-003～IQA-005 / NFR-001～NFR-002 / AC-004～AC-008、AC-011～AC-012 | `src/client/App.tsx` | `tests/functional/status-recovery.test.tsx`、`tests/e2e/status-page.spec.ts` | 本地真实 Chromium 网络阻断产生明确失败，不自动请求；人工重试成功及连续失败后恢复均保持 3 秒门禁和精确请求计数；functional 4/4、Playwright 5/5 通过 |
+| IQA-006～IQA-007 / FR-007 / NFR-003～NFR-004 / AC-009～AC-010 | `src/client/App.tsx`、`src/client/styles.css` | `tests/functional/status-recovery.test.tsx`、`tests/e2e/status-page.spec.ts` | 无登录、输入、导航、写入或敏感内部内容；重试可仅用键盘操作且焦点可见，状态通过文本和语义感知，axe 自动检查无 violation；真实 Chromium 同时检查 320、1440 CSS 像素和 200% zoom 下标题与状态可见 |
+
+### 执行命令与结果
+
+| 命令 | 环境 | 结果 | 证据 |
+|---|---|---|---|
+| contract、integration、functional、component、e2e focused suite（首次编辑测试后） | Coding sandbox；依赖安装前 | 预期失败 | workspace 无 `node_modules/`，五类本地 CLI 均 exit `127`；随后严格执行 `npm ci` |
+| `npm ci` 后再次执行五类 focused suite（生产实现前） | Coding sandbox；Node `v22.23.4`、npm `10.9.9` | 按 test-first 预期失败 | 新测试被发现；integration、functional、component 因 failure/retry 尚未实现而失败；Playwright 因浏览器尚未安装而失败；不将这些结果作为完成证据 |
+| `npm ci` | Coding sandbox；Node `v22.23.4`、npm `10.9.9` | 通过并有 engine/deprecation warning | 严格从 lockfile 安装 438 packages，audit 439 packages 为 0 vulnerabilities；manifest 固定 Node `24.22.2` |
+| `npx --no-install playwright install --with-deps chromium` | Coding sandbox | 通过 | 使用 lockfile 本地 Playwright CLI 安装/确认系统依赖、Chromium 1254、FFmpeg 与 headless shell，浏览器 cache 位于仓库外 |
+| `npm run format:check`、`npx --no-install prettier --check src tests` | Coding sandbox | 通过 | 配置、全部应用源码及测试符合已安装 Prettier |
+| `npm run check` | Coding sandbox | 通过 | TypeScript no-emit 与零 warning ESLint 均 exit `0` |
+| `npm run build` | Coding sandbox | 通过 | Vite 生成客户端 HTML/CSS/JS 与可执行 `dist/server/index.js` |
+| `npm test` | Coding sandbox | 通过 | unit 6/6、component 13/13、contract 19/19、integration 3/3、functional 4/4、Playwright e2e 5/5；六类套件串行完成 |
+| `npm audit` | Coding sandbox | 通过 | 0 vulnerabilities |
+
+### Runtime 与下游门禁就绪制品
+
+本批次形成完整失败与人工恢复应用行为，以及可在真实本地 Fastify 和 Chromium 执行的 IQA-003～IQA-007 自动化入口。Playwright 实际生成 trace/screenshot 到被忽略的 `test-results/`，证明证据采集能力而不提交 session-only 输出；测试使用浏览器网络层阻断真实请求，没有增加产品故障开关或外部服务。
+
+根 `Dockerfile`、active Feature `runtime/deployment.json`、Candidate identity endpoint 和 developer functional test script 仍由后续批准任务完成；本 Session 不提前创建或声称 production candidate 已就绪。
+
+### 延后平台证据
+
+- Node `24.22.2` clean runner 对 lockfile 安装、静态分析、build 和六类聚合测试的重复结果由平台 CI 产生；当前 sandbox 是 Node `v22.23.4`。
+- 本地 IQA-003～IQA-007 Playwright 结果是开发者证据，不能替代精确不可变 Candidate 的 Independent QA 成功、失败、恢复及人工辅助技术 WCAG 2.2 AA 结果。
+- Candidate SHA/image digest、容器 smoke、远程部署、QA target、Independent QA、UAT、发布审批、Review 与 Merge 均属于后续阶段，本 Session 未制造或声称这些证据。
+
+### 限制、剩余风险与阻塞项
+
+- `TASK-SELF-001`：既有缓解保持不变，T002 lockfile 安装先于静态分析；本 Session 再次以 `npm ci` 安装后执行全部检查。
+- `TASK-SELF-002`：真实应用 entry 已存在，完整前后端 build 在本 Session 通过。
+- `TASK-SELF-003`：既有 T019/T024 的 request body 拒绝缓解保持通过，本 Session 的 contract 聚合重跑未回归。
+- `TASK-SELF-004`：本 Session 已在 T030 的真实 Chromium 场景加入 320、1440 CSS 像素与 200% zoom 可见性检查，未使用 functional DOM 环境冒充布局证据；Phase 6 的 T033～T034 仍须完成完整样式收口，人工辅助技术 WCAG 结论仍留给 Independent QA。
+- 当前 sandbox Node 版本不是 manifest 固定的 `24.22.2`；本地命令真实通过，但精确 Node 24 结果仍为延后平台证据。
+
+### 实施结论
+
+**本批次完成 Phase 5 US3 的 T026～T032，并在 7 项边界处停止。** 测试先于生产实现创建并保留预期失败证据；最终 dependency setup、format、TypeScript、lint、前后端 build、六类聚合测试、真实本地 Chromium 和依赖审计在当前 Coding sandbox 通过。用户可见覆盖新增明确失败、无自动重试、人工重试成功、连续失败恢复、键盘/焦点和自动化可访问性开发者证据，不声称 production runtime、部署或下游门禁完成。
+
+下一依赖就绪工作从 Phase 6 的 T033 开始。精确 Node 24 重跑、完整样式收口、production candidate 制品及全部平台下游证据继续保留，不部署、不审批、不合并。
