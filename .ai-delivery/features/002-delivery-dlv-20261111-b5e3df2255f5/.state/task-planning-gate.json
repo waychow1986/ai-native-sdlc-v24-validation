@@ -8,8 +8,8 @@
       "scope": "self",
       "artifact": "tasks-implementation.md",
       "owner": "task-planning",
-      "summary": "强制 npm test 聚合遗漏 unit 测试套件",
-      "recommendation": "将 unit 套件加入 T001、任务规则和完成证据中的 npm test 串行聚合范围，确保 T007 由唯一强制开发者测试入口执行。",
+      "summary": "T003 缺少完成证据所需的 lockfile 安装依赖",
+      "recommendation": "使 T003 显式依赖 T002，并同步修正 Phase 1 依赖说明，确保 clean runner 安装前置于 T003 的静态分析完成证据。",
       "route": "current_stage",
       "reasonType": "contradiction"
     },
@@ -19,10 +19,32 @@
       "scope": "self",
       "artifact": "tasks-implementation.md",
       "owner": "task-planning",
-      "summary": "未落实 Design 要求的 lint 检查",
-      "recommendation": "在 Design 授权的准确路径内增加 lint 工具、配置、check 聚合及完成证据任务，并明确其依赖和 clean runner 可执行性。",
+      "summary": "T004 的完成证据在其执行阶段不可取得",
+      "recommendation": "将 T004 的 Setup 完成证据限定为可在当时验证的构建配置，或把完整前后端构建证据安排到全部所需源码完成后的显式验证任务，并保持依赖闭合。",
+      "route": "current_stage",
+      "reasonType": "infeasible"
+    },
+    {
+      "id": "TASK-SELF-003",
+      "severity": "high",
+      "scope": "predecessor",
+      "artifact": "tasks-implementation.md",
+      "owner": "task-planning",
+      "summary": "状态接口拒绝 request body 的 Design 契约缺少任务覆盖",
+      "recommendation": "在 T019 明确增加状态路径 request body 拒绝的 contract test，并在 T024 的实现范围与完成证据中落实该契约，保持测试先于实现。",
       "route": "current_stage",
       "reasonType": "coverage"
+    },
+    {
+      "id": "TASK-SELF-004",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "tasks-implementation.md",
+      "owner": "task-planning",
+      "summary": "viewport 与 zoom 完成证据所用测试环境不可验证布局",
+      "recommendation": "将 viewport 与 200% zoom 的自动化检查安排到真实浏览器测试任务并保留对应证据；functional 测试仅承担其环境能够确定验证的语义与交互断言。",
+      "route": "current_stage",
+      "reasonType": "infeasible"
     }
   ]
 }
