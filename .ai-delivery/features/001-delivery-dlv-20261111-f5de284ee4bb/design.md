@@ -62,6 +62,7 @@ Fastify 暴露进程存活、依赖就绪和业务诊断三类状态。业务诊
 | `description` | nullable `text` | 未提供或空字符串统一存为 `NULL`；非空内容原样保存并作为纯文本呈现 |
 | `status` | PostgreSQL enum/check：`pending`、`in_progress`、`completed` | 分别映射“待处理”“进行中”“已完成” |
 | `is_probe` | boolean，默认 `false` | 仅业务诊断使用；普通 API 所有查询强制 `false` |
+| `probe_run_id` | nullable UUID | 仅 probe 保存本次诊断 correlation ID；普通任务必须为 `NULL`，API 永不暴露 |
 | `created_at` | `timestamptz`，数据库生成 | 提供稳定展示排序 |
 | `updated_at` | `timestamptz`，每次状态变化更新 | 用于服务端结果版本与诊断，不作为用户功能 |
 | `version` | bigint，从 1 开始递增 | 响应快照版本；不承诺规格外的并发编辑协调 |
@@ -78,7 +79,7 @@ Fastify 暴露进程存活、依赖就绪和业务诊断三类状态。业务诊
 | `state` | `processing`、`completed` | `processing` 只存在于持锁的未提交事务；提交前必须变为 `completed` |
 | `task_id` | nullable UUID | 目标或预生成的创建任务 ID |
 | `outcome` | nullable `succeeded`、`rejected` | 完成后的确定性业务结果 |
-| `response_status` | nullable integer | 原确定性 HTTP 状态，用于重放 |
+| `response_status` | nullable integer | 首次确定性 HTTP 状态；拒绝重放沿用，成功重放使用 `200` |
 | `error_code` | nullable text | `rejected` 时保存不含任务内容的稳定错误码 |
 | `result_status` | nullable task status | 状态变更结果；不保存标题或说明 |
 | `created_at` | `timestamptz` | 诊断和稳定读取使用 |
@@ -86,7 +87,7 @@ Fastify 暴露进程存活、依赖就绪和业务诊断三类状态。业务诊
 
 request hash 的 canonical body 使用 UTF-8 JSON：对象 key 按 Unicode code point 升序、数组保持顺序、字符串保持请求值、无 body 使用 JSON `null`；method 使用大写，path 使用包含资源 UUID 的实际 `/api/v1` path，不含 query。传输/schema 校验在事务前完成，失败不创建操作记录；通过后不得更换 hash 规则。
 
-操作生命周期固定为 `absent → processing（未提交且持锁）→ completed/succeeded | completed/rejected`，或任意事务异常时 `processing → rollback → absent`。操作记录与成功业务结果在同一事务提交并持久保留；确定性领域拒绝不执行 mutation，但以 `completed/rejected` 提交，当前范围不提供对外清理策略。相同 key 与相同 hash 重放已保存的状态码、操作引用及成功结果引用或错误码，不重复 mutation；创建成功重放不复制任务内容，而返回 `ReplayResult`，客户端按 `task_id` 重新读取当前权威结果。相同 key 与不同 hash 在任何 mutation 前返回 `409 IDEMPOTENCY_KEY_REUSED`。
+操作生命周期固定为 `absent → processing（未提交且持锁）→ completed/succeeded | completed/rejected`，或任意事务异常时 `processing → rollback → absent`。操作记录与成功业务结果在同一事务提交并持久保留；确定性领域拒绝不执行 mutation，但以 `completed/rejected` 提交，当前范围不提供对外清理策略。相同 key 与相同 hash 重放操作引用及成功结果引用或原错误状态/错误码，不重复 mutation；成功重放统一返回 `200 ReplayResult`，创建重放不复制任务内容，客户端按 `task_id` 重新读取当前权威结果。相同 key 与不同 hash 在任何 mutation 前返回 `409 IDEMPOTENCY_KEY_REUSED`。
 
 ### 状态不变量
 
@@ -94,7 +95,7 @@ request hash 的 canonical body 使用 UTF-8 JSON：对象 key 按 Unicode code 
 - 状态事务在取得幂等锁并建立 `processing` 后锁定目标普通任务，验证目标状态不同，更新状态、时间和版本并完成操作记录；其他字段不变。
 - 删除事务在取得幂等锁并建立 `processing` 后锁定目标普通任务，删除任务并完成操作记录；取消删除完全停留在浏览器，不发送 DELETE。
 - 确定性领域拒绝将操作完成为 `rejected` 后提交；数据库断连、deadlock/serialization 重试耗尽、进程终止或其他非确定性失败回滚任务与操作记录。等待同 key 的请求随后取得锁：若前事务提交则重放或报摘要冲突，若前事务回滚则成为唯一 owner 并执行；不会观察或遗留已提交的 `processing`。
-- probe 数据始终带 `is_probe=true`，不会进入普通读取、单项读取、任务计数或性能验收数据。
+- probe 数据始终带 `is_probe=true` 和本次 `probe_run_id`；数据库约束要求普通任务的 `probe_run_id IS NULL`、probe 的值非空。probe 不会进入普通读取、单项读取、任务计数或性能验收数据。
 - 数据库唯一约束、check constraint 和领域校验共同保证枚举、幂等键及 probe 隔离；migration 与应用版本必须匹配。
 
 ## Component 边界与项目结构
@@ -127,7 +128,7 @@ request hash 的 canonical body 使用 UTF-8 JSON：对象 key 按 Unicode code 
 
 写操作状态为 `idle → submitting → succeeded | failed | unknown → reconciling → applied | not_applied`。`succeeded` 仅来自服务端确定性成功响应；连接中断、客户端超时或无法解析响应进入 `unknown`，不改变最后确认快照。协调先以幂等键查询操作；查询取得与写事务相同的 advisory lock，因此会等待在途 owner 提交或回滚，不会把未提交操作误判为不存在。`succeeded` 记录触发任务/集合重新读取并显示已生效，`rejected` 记录恢复原确定性失败；记录不存在时重新获取集合并按预生成 task ID、目标状态或删除目标判断当前未生效，再开放使用原 key 的安全重试。协调本身失败则保持 `unknown` 并仅提供“重新检查”，不开放新操作。
 
-Fastify 每个请求从连接池获取连接。幂等 advisory key 固定为 UUID 文本 SHA-256 的前 64 bit 按有符号 bigint 解释，所有写入与 operation 查询必须使用同一函数；碰撞只产生额外等待。操作表主键是第二道不可绕过的唯一性约束。单任务 mutation 另使用 `SELECT ... FOR UPDATE`；不同幂等键、不同任务可并发，针对同一任务的提交按任务行锁获取顺序串行。所有普通任务 mutation 还取得集合冻结锁的 shared transaction-level advisory lock；业务诊断仅在普通集合完整性比对期间取得对应 exclusive session-level lock，随后释放再执行探针写入，避免自锁。规格没有批准冲突解决承诺，因此 API 返回事务完成时的权威结果，客户端随后重新读取；不存在的任务返回确定性 `404`。数据库连接池每实例上限由部署配置提供，默认实现值为 10；该值是可调运行参数而非产品承诺。
+Fastify 每个请求从连接池获取连接。幂等 advisory key 固定为 UTF-8 `idempotency:` 加 UUID 文本的 SHA-256 前 64 bit 按有符号 bigint 解释，所有写入与 operation 查询必须使用同一函数；碰撞只产生额外等待。操作表主键是第二道不可绕过的唯一性约束。单任务 mutation 另使用 `SELECT ... FOR UPDATE`；不同幂等键、不同任务可并发，针对同一任务的提交按任务行锁获取顺序串行。集合冻结 key 固定为 UTF-8 `task-collection-freeze:v1` 的同算法值；所有普通任务 mutation 使用 `pg_advisory_xact_lock_shared`，业务诊断在专用连接上使用 `pg_advisory_lock`，仅在普通集合完整性比对期间持有并在 `finally` 显式释放，随后才执行探针写入，避免自锁。写请求与 operation 查询的服务端 deadline 固定为 5 秒；等待幂等锁超时按 transient failure 回滚，不解释为操作不存在。规格没有批准冲突解决承诺，因此 API 返回事务完成时的权威结果，客户端随后重新读取；不存在的任务返回确定性 `404`。数据库连接池每实例上限由部署配置提供，默认实现值为 10；该值是可调运行参数而非产品承诺。
 
 浏览器生成写操作 key 并在该次未决操作完成前保存在 `sessionStorage`，刷新后可继续协调；不在浏览器持久化任务内容。服务重启不影响 PostgreSQL 中任务及操作记录。应用收到终止信号后停止接收新请求、等待在途请求完成至平台终止窗口并关闭连接池；未提交事务由数据库回滚。
 
@@ -188,9 +189,9 @@ Fastify 启用严格 CSP（默认仅自身来源，禁止 object 与 frame，脚
 
 应用暴露内部 Prometheus 文本指标端点仅在平台能限制运维访问时启用；否则保持关闭，避免本次擅自增加公开运维接口。必需的可观测证据来自 stdout 日志与三个健康端点。指标若启用，只含请求计数、按路由模板/状态码的耗时、连接池状态和诊断结果，不含 task ID 或任务内容。未批准外部 telemetry backend，故设计不绑定或部署任何日志、指标、trace 产品。
 
-业务诊断使用独立 session-level advisory lock 串行化整次诊断，并为每个断言设置总诊断 deadline 内的有界超时。第一项 `accept_request` 通过 Node 内置 HTTP client 向 `127.0.0.1:${PORT}` 发起真实 `GET /api/v1/tasks`，要求请求穿过 Fastify 路由、hook、schema 和普通任务读取 adapter，返回 `200`、有效 contract 与 `X-Request-Id`；loopback 不经过外部 ingress，因此 ingress/TLS 仍由部署检查负责。第二项 `read` 先取得集合冻结 exclusive lock，在一个 repeatable-read 数据库事务中读取全部 `is_probe=false` 任务并按 `created_at,id` canonicalize 为字段完整的 JSON 后计算数量与 SHA-256，再发起同一 HTTP 读取并按同规则计算数量与摘要；两者均相等才证明已知普通任务集合完整读取，之后立即释放冻结锁。摘要、任务字段和 HTTP body 只存在于诊断进程内存，禁止进入日志、metric、持久表或健康响应。
+业务诊断使用 UTF-8 `business-diagnostic:v1` 的 SHA-256 前 64 bit 所确定的 exclusive session-level advisory lock 串行化整次诊断；总 deadline 固定为 15 秒，专用连接有界等待至该 deadline，超时即判 `unavailable`，并在 `finally` 解锁或关闭连接。每个断言也受同一总 deadline 限制。第一项 `accept_request` 通过 Node 内置 HTTP client 向 `127.0.0.1:${PORT}` 发起真实 `GET /api/v1/tasks`，要求请求穿过 Fastify 路由、hook、schema 和普通任务读取 adapter，返回 `200`、有效 contract 与 `X-Request-Id`；loopback 不经过外部 ingress，因此 ingress/TLS 仍由部署检查负责。第二项 `read` 先取得集合冻结 exclusive lock，在一个 repeatable-read 数据库事务中读取全部 `is_probe=false` 任务；Repository 将每行映射为 API `Task`，按 `createdAt,id` 排序，并以固定字段顺序 `id,title,description,status,createdAt,updatedAt,version` 和标准 JSON 字符串转义生成 UTF-8 JSON 数组，再计算数量与 SHA-256。loopback HTTP 返回也按同规则计算数量与摘要；两者均相等才证明已知普通任务集合完整读取，之后立即释放冻结锁。摘要、任务字段和 HTTP body 只存在于诊断进程内存，禁止进入日志、metric、持久表或健康响应。
 
-完成两项独立断言并释放集合冻结锁后，诊断通过 loopback HTTP 和普通 application service/Repository/事务路径执行带内部签名 probe context 的创建、按 ID 读取、状态变更、重新读取、删除和最终 `404` 检查；只有 server 内部诊断调用可以设置 `is_probe=true`，外部 header 不能启用。每一步分别产生 `create`、`change_status`、`delete` 断言，并在 `finally` 以限定 `is_probe=true` 与本次 correlation ID 的清理事务删除遗留 probe。`accept_request`、`read`、三类写断言、超时和清理全部成功时才返回 `available`；任一失败或部分成功均返回 `503 unavailable`。响应的 `affectedCapabilities` 只允许 `accept_request/read/create/change_status/delete/diagnostic_cleanup` 枚举，不返回各断言输入、摘要、任务数量、任务 ID、标题、说明或凭据。
+完成两项独立断言并释放集合冻结锁后，诊断通过 loopback HTTP 和普通 application service/Repository/事务路径执行带内部 probe context 的创建、按 ID 读取、状态变更、重新读取、删除和最终 `404` 检查。进程启动时生成仅驻内存的 256-bit 随机诊断 token；内部 client 以 `X-Internal-Diagnostic` 发送，Fastify 仅在 socket remote address 为 loopback 且 token 经 constant-time comparison 匹配时设置 `is_probe=true`，其他请求即使伪造 header 也按普通请求处理。该 header 与 token 必须被 logger redaction，绝不进入配置、响应或持久化。每一步分别产生 `create`、`change_status`、`delete` 断言，并在 `finally` 以限定 `is_probe=true` 与本次 correlation ID 的清理事务删除遗留 probe。`accept_request`、`read`、三类写断言、超时和清理全部成功时才返回 `available`；任一失败或部分成功均返回 `503 unavailable`。响应的 `affectedCapabilities` 只允许 `accept_request/read/create/change_status/delete/diagnostic_cleanup` 枚举，不返回各断言输入、摘要、任务数量、任务 ID、标题、说明或凭据。
 
 ## SLO、限制、扩缩容、重试与恢复
 
@@ -208,7 +209,7 @@ Fastify 启用严格 CSP（默认仅自身来源，禁止 object 与 frame，脚
 
 拓扑为 HTTPS ingress → 一个无状态 Fastify 应用部署 → PostgreSQL 17。数据库不对浏览器或公网开放。平台在应用接流量前，以同一 image 执行一次 `npm run db:migrate`；migration 身份与运行身份分离。应用仅在 migration checksum 与预期版本一致、数据库可查询后 readiness 成功。
 
-首个 migration 创建状态类型、`tasks`、`idempotent_operations`（含 state/outcome/响应元数据及状态一致性 check constraint）、约束及普通任务读取索引。约束禁止提交 `processing` 缺少必需字段之外的非法组合，并由 integration test 证明应用只提交 `completed`；`key` 主键兜底防止 advisory lock 实现偏差。后续 migration 遵循 expand/contract：先部署向后兼容 schema，再部署应用，确认稳定后方可在后续 Candidate 移除旧结构。本次空仓库无历史数据导入或转换。
+首个 migration 创建状态类型、`tasks`、`idempotent_operations`（含 state/outcome/响应元数据）、普通 check constraint、一个 `DEFERRABLE INITIALLY DEFERRED` constraint trigger 及普通任务读取索引。普通约束校验 `completed` 与 outcome/响应字段组合；deferred trigger 在事务结束时按 key 读取当前行，拒绝提交仍为 `processing` 的记录，使事务内可先占位但数据库中永不出现已提交的在途状态。`key` 主键兜底防止 advisory lock 实现偏差。后续 migration 遵循 expand/contract：先部署向后兼容 schema，再部署应用，确认稳定后方可在后续 Candidate 移除旧结构。本次空仓库无历史数据导入或转换。
 
 Rollout 先在新 Candidate 上运行 migration 和 readiness，再逐步接流量；失败即停止并恢复上一不可变 image。只要 migration 保持向后兼容，应用 rollback 不回滚数据库。若未来 migration 具有不可逆数据变换，必须在实施前提供独立备份/恢复方案；本次首建 migration 不需要数据 rollback。回退后重新执行业务诊断和关键功能验证，不能仅依赖容器启动。
 
