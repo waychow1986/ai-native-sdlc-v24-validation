@@ -42,8 +42,8 @@ describe("App loading lifecycle", () => {
       generation: 2,
     });
     expect(current).toEqual({ kind: "loading", generation: 2 });
-    expect(
-      statusReducer(current, { type: "begin", generation: 1 }),
-    ).toBe(current);
+    expect(statusReducer(current, { type: "begin", generation: 1 })).toBe(
+      current,
+    );
   });
 });

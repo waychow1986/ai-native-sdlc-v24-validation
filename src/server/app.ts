@@ -175,7 +175,9 @@ export function buildApp(
     }
 
     try {
-      const asset = await readFile(resolve(options.staticRoot, "assets", fileName));
+      const asset = await readFile(
+        resolve(options.staticRoot, "assets", fileName),
+      );
       const contentType =
         extname(fileName) === ".css"
           ? "text/css; charset=utf-8"

@@ -35,18 +35,18 @@
 
 ### 测试
 
-- [ ] T010 [P] [US1] 先编写首页与静态协议 contract test，覆盖 `GET /`、单一挂载点、未知非 API 路径 `404`、CSP 和禁止额外业务页面（`tests/contract/page.test.ts`；来源：US-001、FR-001、FR-007、AC-001、AC-008、页面与静态协议；依赖：T009；完成证据：Fastify `inject` 对页面、header 和路由边界的断言）
-- [ ] T011 [P] [US1] 先编写真实本地 Fastify 进程与浏览器 Fetch 的 integration test，确认打开首页只发起一次同源 `GET /api/status` 且结果未决时保持处理中（`tests/integration/page-loading.test.ts`；来源：US-001、FR-002、AC-002、IQA-001；依赖：T009；完成证据：真实 HTTP 请求记录与处理中 DOM 断言）
-- [ ] T012 [P] [US1] 先编写页面范围、标题、单一状态区域、处理中语义、无登录/写入/导航和基础 axe 规则的 functional test（`tests/functional/page-loading.test.tsx`；来源：US-001、FR-001～FR-002、FR-007、NFR-003～NFR-006、AC-001～AC-002、AC-009～AC-010；依赖：T009；完成证据：用户可见 DOM、键盘与自动化可访问性断言）
-- [ ] T013 [P] [US1] 先编写 IQA-001 对应的 Playwright end-to-end 场景，保留页面打开、请求、标题、单一状态区域、处理中状态和 2 秒页面主体边界的 trace/screenshot 能力（`tests/e2e/status-page.spec.ts`；来源：IQA-001、NFR-001、AC-001～AC-002、AC-011；依赖：T009；完成证据：真实本地应用与 Chromium 的原始时间和浏览器证据）
-- [ ] T014 [P] [US1] 先编写 `loading` 初始状态、唯一当前状态、卸载中止和旧 generation 不更新页面的 focused unit/component test（`tests/component/App.test.tsx`；来源：US-001、FR-002、TD-004、状态不变量 1、2、5；依赖：T009；完成证据：确定性的 reducer、AbortController 和 DOM 状态断言）
+- [x] T010 [P] [US1] 先编写首页与静态协议 contract test，覆盖 `GET /`、单一挂载点、未知非 API 路径 `404`、CSP 和禁止额外业务页面（`tests/contract/page.test.ts`；来源：US-001、FR-001、FR-007、AC-001、AC-008、页面与静态协议；依赖：T009；完成证据：Fastify `inject` 对页面、header 和路由边界的断言）
+- [x] T011 [P] [US1] 先编写真实本地 Fastify 进程与浏览器 Fetch 的 integration test，确认打开首页只发起一次同源 `GET /api/status` 且结果未决时保持处理中（`tests/integration/page-loading.test.ts`；来源：US-001、FR-002、AC-002、IQA-001；依赖：T009；完成证据：真实 HTTP 请求记录与处理中 DOM 断言）
+- [x] T012 [P] [US1] 先编写页面范围、标题、单一状态区域、处理中语义、无登录/写入/导航和基础 axe 规则的 functional test（`tests/functional/page-loading.test.tsx`；来源：US-001、FR-001～FR-002、FR-007、NFR-003～NFR-006、AC-001～AC-002、AC-009～AC-010；依赖：T009；完成证据：用户可见 DOM、键盘与自动化可访问性断言）
+- [x] T013 [P] [US1] 先编写 IQA-001 对应的 Playwright end-to-end 场景，保留页面打开、请求、标题、单一状态区域、处理中状态和 2 秒页面主体边界的 trace/screenshot 能力（`tests/e2e/status-page.spec.ts`；来源：IQA-001、NFR-001、AC-001～AC-002、AC-011；依赖：T009；完成证据：真实本地应用与 Chromium 的原始时间和浏览器证据）
+- [x] T014 [P] [US1] 先编写 `loading` 初始状态、唯一当前状态、卸载中止和旧 generation 不更新页面的 focused unit/component test（`tests/component/App.test.tsx`；来源：US-001、FR-002、TD-004、状态不变量 1、2、5；依赖：T009；完成证据：确定性的 reducer、AbortController 和 DOM 状态断言）
 
 ### 实现
 
-- [ ] T015 [P] [US1] 创建唯一应用挂载点和客户端入口，不写入额外可见内容或 inline script/style（`index.html`、`src/client/main.tsx`；来源：US-001、FR-001、NFR-006、页面与静态协议；依赖：T010～T014；完成证据：T010、T012、T013 的挂载与范围断言通过）
-- [ ] T016 [US1] 实现标题“最小流程验证”、唯一 live status region、初始/未决“正在获取状态”、generation reducer 和卸载清理（`src/client/App.tsx`；来源：US-001、FR-001～FR-002、TD-004、AC-001～AC-002；依赖：T010～T015；完成证据：T012～T014 通过）
-- [ ] T017 [P] [US1] 实现最小响应式页面样式、非颜色状态表达及清晰的 `:focus-visible` 基础样式，不增加装饰性业务内容（`src/client/styles.css`；来源：NFR-004、NFR-006、TD-006、AC-010；依赖：T010～T015；完成证据：T012 的范围与自动化可访问性断言通过）
-- [ ] T018 [US1] 让 Fastify 同源提供构建后的唯一首页及静态资源，并接入页面首次状态请求生命周期（`src/server/app.ts`、`src/client/status-client.ts`；来源：FR-002、TD-001、架构概览 1～2、页面与静态协议；依赖：T016、T017；完成证据：T010～T014 全部通过且首页无额外 route）
+- [x] T015 [P] [US1] 创建唯一应用挂载点和客户端入口，不写入额外可见内容或 inline script/style（`index.html`、`src/client/main.tsx`；来源：US-001、FR-001、NFR-006、页面与静态协议；依赖：T010～T014；完成证据：T010、T012、T013 的挂载与范围断言通过）
+- [x] T016 [US1] 实现标题“最小流程验证”、唯一 live status region、初始/未决“正在获取状态”、generation reducer 和卸载清理（`src/client/App.tsx`；来源：US-001、FR-001～FR-002、TD-004、AC-001～AC-002；依赖：T010～T015；完成证据：T012～T014 通过）
+- [x] T017 [P] [US1] 实现最小响应式页面样式、非颜色状态表达及清晰的 `:focus-visible` 基础样式，不增加装饰性业务内容（`src/client/styles.css`；来源：NFR-004、NFR-006、TD-006、AC-010；依赖：T010～T015；完成证据：T012 的范围与自动化可访问性断言通过）
+- [x] T018 [US1] 让 Fastify 同源提供构建后的唯一首页及静态资源，并接入页面首次状态请求生命周期（`src/server/app.ts`、`src/client/status-client.ts`；来源：FR-002、TD-001、架构概览 1～2、页面与静态协议；依赖：T016、T017；完成证据：T010～T014 全部通过且首页无额外 route）
 
 ## Phase 4：US2 - 查看成功状态
 
