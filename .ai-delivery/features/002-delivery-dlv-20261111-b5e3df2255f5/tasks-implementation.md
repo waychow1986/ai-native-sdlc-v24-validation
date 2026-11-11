@@ -27,9 +27,9 @@
 
 ## Phase 2：Foundational
 
-- [ ] T007 [P] 先编写配置、结构化日志白名单、请求体上限、安全响应头、未知 API 错误、优雅退出和非法配置非零退出的定向单元测试（`tests/unit/server-foundation.test.ts`；来源：TD-008、配置/可观测性与运维、安全/隐私/身份与 Secret；依赖：T002、T003；完成证据：测试在实现前可执行并逐项断言批准的服务边界）
-- [ ] T008 [P] 先编写 `GET /health/live` 与 `GET /health/ready` 的 `204`、空响应、无环境详情及非产品隔离 contract test（`tests/contract/health.test.ts`；来源：运维接口、验证环境责任矩阵；依赖：T002、T003；完成证据：Fastify `inject` contract test 覆盖两个健康端点）
-- [ ] T009 实现可注入的 Fastify 应用、严格配置解析、白名单日志、安全/错误处理、健康路由、监听与优雅退出，暂不实现产品页面和状态 API（`src/server/app.ts`、`src/server/index.ts`、`src/server/routes/health.ts`；来源：TD-002、TD-008、数据流/状态/并发与生命周期、运维接口；依赖：T007、T008；完成证据：T007～T008 通过且非法 `PORT`、`LOG_LEVEL`、`TRUST_PROXY` 被拒绝）
+- [x] T007 [P] 先编写配置、结构化日志白名单、请求体上限、安全响应头、未知 API 错误、优雅退出和非法配置非零退出的定向单元测试（`tests/unit/server-foundation.test.ts`；来源：TD-008、配置/可观测性与运维、安全/隐私/身份与 Secret；依赖：T002、T003；完成证据：测试在实现前可执行并逐项断言批准的服务边界）
+- [x] T008 [P] 先编写 `GET /health/live` 与 `GET /health/ready` 的 `204`、空响应、无环境详情及非产品隔离 contract test（`tests/contract/health.test.ts`；来源：运维接口、验证环境责任矩阵；依赖：T002、T003；完成证据：Fastify `inject` contract test 覆盖两个健康端点）
+- [x] T009 实现可注入的 Fastify 应用、严格配置解析、白名单日志、安全/错误处理、健康路由、监听与优雅退出，暂不实现产品页面和状态 API（`src/server/app.ts`、`src/server/index.ts`、`src/server/routes/health.ts`；来源：TD-002、TD-008、数据流/状态/并发与生命周期、运维接口；依赖：T007、T008；完成证据：T007～T008 通过且非法 `PORT`、`LOG_LEVEL`、`TRUST_PROXY` 被拒绝）
 
 ## Phase 3：US1 - 查看最小状态页
 

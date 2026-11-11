@@ -43,7 +43,9 @@ describe("server foundation", () => {
       { TRUST_PROXY: "0" },
       { TRUST_PROXY: "-1" },
     ]) {
-      expect(() => parseServerConfig(env)).toThrow("Invalid server configuration");
+      expect(() => parseServerConfig(env)).toThrow(
+        "Invalid server configuration",
+      );
     }
   });
 
@@ -63,7 +65,10 @@ describe("server foundation", () => {
       route: "/health/live",
     });
     expect(
-      serializeResponse({ statusCode: 204, headers: { "set-cookie": "secret" } }),
+      serializeResponse({
+        statusCode: 204,
+        headers: { "set-cookie": "secret" },
+      }),
     ).toEqual({ status: 204 });
     expect(serializeError(new Error("secret internal detail"))).toEqual({
       error: "internal_error",

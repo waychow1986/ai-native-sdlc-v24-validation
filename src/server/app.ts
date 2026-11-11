@@ -39,7 +39,9 @@ function parseLogLevel(value: string | undefined): ServerConfig["logLevel"] {
   return level as ServerConfig["logLevel"];
 }
 
-function parseTrustProxy(value: string | undefined): ServerConfig["trustProxy"] {
+function parseTrustProxy(
+  value: string | undefined,
+): ServerConfig["trustProxy"] {
   if (value === undefined || value === "false") {
     return false;
   }
@@ -79,7 +81,8 @@ export function serializeRequest(value: unknown): {
   return {
     ...(typeof request.id === "string" ? { requestId: request.id } : {}),
     ...(typeof request.method === "string" ? { method: request.method } : {}),
-    route: typeof routeOptions.url === "string" ? routeOptions.url : "unmatched",
+    route:
+      typeof routeOptions.url === "string" ? routeOptions.url : "unmatched",
   };
 }
 
@@ -123,10 +126,7 @@ export function buildApp(
       .header("Content-Security-Policy", CONTENT_SECURITY_POLICY)
       .header("X-Content-Type-Options", "nosniff")
       .header("Referrer-Policy", "no-referrer")
-      .header(
-        "Permissions-Policy",
-        "camera=(), microphone=(), geolocation=()",
-      );
+      .header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   });
 
   app.setNotFoundHandler(async (request, reply) => {

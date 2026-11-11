@@ -2,11 +2,7 @@ import { pathToFileURL } from "node:url";
 
 import type { FastifyInstance } from "fastify";
 
-import {
-  buildApp,
-  parseServerConfig,
-  type ServerConfig,
-} from "./app.js";
+import { buildApp, parseServerConfig, type ServerConfig } from "./app.js";
 
 interface SignalSource {
   on(event: "SIGINT" | "SIGTERM", listener: () => void): unknown;
