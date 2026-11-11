@@ -44,3 +44,39 @@ test("IQA-001 loads the single status page and keeps a pending request visible",
     await app.close();
   }
 });
+
+test("IQA-002 shows exact success within three seconds after one request", async ({
+  context,
+  page,
+}, testInfo) => {
+  const app = buildApp();
+  let requestCount = 0;
+  app.addHook("onRequest", async (request) => {
+    if (request.url === "/api/status") {
+      requestCount += 1;
+    }
+  });
+  const origin = await app.listen({ host: "127.0.0.1", port: 0 });
+  const tracePath = testInfo.outputPath("iqa-002-trace.zip");
+
+  await context.tracing.start({ screenshots: true, snapshots: true });
+  try {
+    const requestedAt = Date.now();
+    await page.goto(origin);
+    const status = page.getByRole("status");
+    await expect(status).toHaveText("ok");
+    expect(Date.now() - requestedAt).toBeLessThanOrEqual(3_000);
+    expect(requestCount).toBe(1);
+    await expect(page.getByText("ok", { exact: true })).toHaveCount(1);
+    await expect(page.getByRole("button")).toHaveCount(0);
+    await page.waitForTimeout(100);
+    expect(requestCount).toBe(1);
+    await page.screenshot({
+      path: testInfo.outputPath("iqa-002-success.png"),
+      fullPage: true,
+    });
+  } finally {
+    await context.tracing.stop({ path: tracePath });
+    await app.close();
+  }
+});
