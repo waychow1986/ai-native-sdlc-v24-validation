@@ -5,22 +5,22 @@
 - 每项任务使用格式：`- [ ] T001 [P?] [US?] 描述（准确仓库路径）`
 - 每项任务必须引用来源 Intent、Specification 场景、Contract 或技术决策。
 - 测试任务必须位于对应生产实现任务之前。
-- `npm test` 是唯一强制的 `developerTests` 聚合入口，必须串行执行 component、contract、integration、functional 和 Playwright end-to-end 套件；定向测试执行仅作为 test-first 辅助证据，不能替代聚合结果。
+- `npm test` 是唯一强制的 `developerTests` 聚合入口，必须串行执行 unit、component、contract、integration、functional 和 Playwright end-to-end 套件；定向测试执行仅作为 test-first 辅助证据，不能替代聚合结果。
 - CI、部署、Independent QA、UAT、发布、Review 和 Merge 结果属于下游平台证据。
 
 ## 依赖关系
 
-- Phase 1 完成后才能开始 Phase 2；T002 依赖 T001，T003～T006 可在 T001 后并行。
+- Phase 1 完成后才能开始 Phase 2；T002 依赖 T001，T003～T006 可在 T001 后并行；T003 在 `package.json` 内完成 lint 配置和 `check` 聚合后，T036 才能声明该 clean runner 静态分析入口。
 - Phase 2 是全部用户故事的阻塞前置条件；T009 依赖 T007～T008。
 - US1、US2、US3 均为 P1，但按产品状态旅程依次实施：Phase 3 依赖 T009，Phase 4 依赖 T018，Phase 5 依赖 T025。
 - 每个用户故事内先完成全部测试任务，再开始该故事的生产实现；同一测试文件的后续修改显式依赖其较早任务。
-- Phase 6 依赖全部用户故事实现完成；T034 依赖 T033，T035 依赖 T034，T036 依赖 T002、T006、T035。
+- Phase 6 依赖全部用户故事实现完成；T034 依赖 T033，T035 依赖 T034，T036 依赖 T002、T003、T006、T035。
 
 ## Phase 1：Setup
 
-- [ ] T001 按 TD-001、TD-010 和 Quickstart 固定 Node.js 24、TypeScript 5.9、React 19、Vite 7、Fastify 5、Vitest、Playwright、axe-core 及项目脚本，确保 `check`、`build`、`test` 使用已批准工具且 `test` 串行聚合 component、contract、integration、functional 与 Playwright end-to-end 测试（`package.json`；来源：TD-001、TD-010、Quickstart 1～5；依赖：无；完成证据：manifest 中的版本、本地 CLI 与强制聚合全部五类测试套件的 script 声明可审查）
+- [ ] T001 按 TD-001、TD-010 和 Quickstart 固定 Node.js 24、TypeScript 5.9、React 19、Vite 7、Fastify 5、Vitest、Playwright、axe-core、ESLint 及适配 TypeScript/React 的 lint 依赖与项目脚本，确保 `check`、`build`、`test` 使用 lockfile 安装的本地 CLI，且 `test` 串行聚合 unit、component、contract、integration、functional 与 Playwright end-to-end 测试（`package.json`；来源：TD-001、TD-010、验证环境责任矩阵、Quickstart 1～5；依赖：无；完成证据：manifest 中的固定版本、本地 CLI、lint 依赖与强制聚合全部六类测试套件的 script 声明可审查）
 - [ ] T002 根据 T001 生成并提交可供 `npm ci` 在 clean runner 复现的完整 npm lockfile（`package-lock.json`；来源：TD-010、Quickstart 1；依赖：T001；完成证据：`npm ci` 严格使用 lockfile 的安装输出）
-- [ ] T003 [P] 配置客户端、服务端和测试所需的严格 TypeScript 检查与 no-emit 检查边界（`tsconfig.json`；来源：TD-001、Quickstart 3；依赖：T001；完成证据：`npm run check` 的 TypeScript 原始输出）
+- [ ] T003 [P] 配置客户端、服务端和测试所需的严格 TypeScript no-emit 边界，并在 manifest 内配置覆盖 `src/`、`tests/`、`vite.config.ts` 的 TypeScript/React lint 规则、零 warning 失败策略以及先 TypeScript 后 lint 的串行 `check` 聚合，禁止运行时临时安装工具（`tsconfig.json`、`package.json`；来源：TD-001、验证环境责任矩阵、Quickstart 3 及其 `npm run check` 契约；依赖：T001；完成证据：clean runner 经 T002 安装后执行 `npm run check`，保留 TypeScript no-emit 与项目 lint 两段真实 stdout/stderr 和统一退出码，任一失败均使聚合非零退出）
 - [ ] T004 [P] 配置 React 构建、服务端构建、测试环境及生产静态产物边界，不增加 client-side 业务路由（`vite.config.ts`；来源：TD-001、TD-010、页面与静态协议；依赖：T001；完成证据：`npm run build` 生成约定客户端和服务端产物）
 - [ ] T005 [P] 忽略 `node_modules/`、`dist/`、`coverage/`、`playwright-report/`、`test-results/` 和 `.env*`，且不新增 `.env.example`（`.gitignore`；来源：Component 边界与项目结构；依赖：T001；完成证据：本地输出与环境文件均不进入 Git 候选变更）
 - [ ] T006 [P] 从容器构建上下文排除本地输出、`.git/` 和 `.ai-delivery/`（`.dockerignore`；来源：Component 边界与项目结构、TD-010；依赖：T001；完成证据：容器构建上下文不包含所列目录）
@@ -83,12 +83,12 @@
 - [ ] T033 先在现有 functional 测试中追加 320～1440 CSS 像素、200% 放大、焦点可见和非纯颜色断言，验证标题、状态与适用的重试操作不丢失（`tests/functional/page-loading.test.tsx`、`tests/functional/status-recovery.test.tsx`；来源：NFR-004、TD-006、AC-010、IQA-007；依赖：T032；完成证据：样式收口前可执行的 viewport、zoom、焦点与非颜色验收断言）
 - [ ] T034 按已批准安全边界完成跨故事样式收口，确保焦点可见、状态不只依靠颜色且在 320～1440 CSS 像素和 200% 放大下不丢失标题、状态或重试操作（`src/client/styles.css`；来源：NFR-004、TD-006、AC-010、IQA-007；依赖：T033；完成证据：T030、T033 的 axe-core、键盘、焦点、viewport 与 zoom 自动化结果通过；人工辅助技术结论留给 Independent QA）
 - [ ] T035 创建固定 Node 24 基础 image digest 的 multi-stage production image，使用非 root 用户且仅包含 production dependencies 和构建产物，并以 `PORT=3000` 启动编译后的 Fastify 服务（`Dockerfile`；来源：TD-002、TD-010、安全/隐私/身份与 Secret、部署拓扑；依赖：T034；完成证据：使用本地 OCI-compatible runtime 完成 image 构建及非 root、端口、页面、API、liveness/readiness smoke）
-- [ ] T036 声明幂等 `developerSetupCommands` 为 `npm ci`、`npx --no-install playwright install --with-deps chromium`，并仅声明非空分类 `staticAnalysis`=`npm run check`、`build`=`npm run build`、`developerTests`=`npm test`，同时记录根 Dockerfile、container port `3000` 及健康路径（`.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/runtime/deployment.json`；来源：治理与技术约束、验证环境责任矩阵、Quickstart；依赖：T002、T006、T035；完成证据：schema 校验通过，命令非 no-op、类别内唯一且可在 clean runner 按序执行）
+- [ ] T036 声明幂等 `developerSetupCommands` 为 `npm ci`、`npx --no-install playwright install --with-deps chromium`，并仅声明非空分类 `staticAnalysis`=`npm run check`、`build`=`npm run build`、`developerTests`=`npm test`，同时记录根 Dockerfile、container port `3000` 及健康路径（`.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/runtime/deployment.json`；来源：治理与技术约束、验证环境责任矩阵、Quickstart；依赖：T002、T003、T006、T035；完成证据：schema 校验通过，命令非 no-op、类别内唯一，且可在 clean runner 按序执行包含 TypeScript no-emit 与项目 lint 的 `npm run check`）
 
 ## 完成证据
 
-- Setup 与 Foundational：保留 `npm ci`、`npm run check` 的真实 stdout/stderr 和退出码；lockfile 安装、类型/lint、安全配置、健康 contract 任一失败即停止。
-- 每个用户故事：保留 component、contract、integration、functional 和 Playwright end-to-end 测试的真实结果；这些测试的最终通过证据必须来自 T001 定义的 `npm test` 强制聚合，定向执行只作为 test-first 辅助证据；浏览器场景使用本地真实 Fastify 进程，并保留可归属本地构建的请求记录、trace、screenshot 与原始计时。
-- Coding 总体验证：按 Quickstart 顺序执行 `npm ci`、`npx --no-install playwright install --with-deps chromium`、`npm run check`、`npm run build`、`npm test`；其中 `npm test` 必须串行执行 component、contract、integration、functional 和 Playwright end-to-end 全部五类测试，任一缺失或失败均停止，且不在失败后安装未声明 package。
+- Setup 与 Foundational：在 clean runner 保留 `npm ci`、`npm run check` 的真实 stdout/stderr 和退出码；`npm run check` 必须串行输出 TypeScript no-emit 与项目 lint 结果，lockfile 安装、类型、lint、安全配置、健康 contract 任一失败即停止。
+- 每个用户故事：保留 unit、component、contract、integration、functional 和 Playwright end-to-end 测试的真实结果；这些测试的最终通过证据必须来自 T001 定义的 `npm test` 强制聚合，定向执行只作为 test-first 辅助证据；浏览器场景使用本地真实 Fastify 进程，并保留可归属本地构建的请求记录、trace、screenshot 与原始计时。
+- Coding 总体验证：按 Quickstart 顺序执行 `npm ci`、`npx --no-install playwright install --with-deps chromium`、`npm run check`、`npm run build`、`npm test`；其中 `npm run check` 必须串行执行 TypeScript no-emit 与项目 lint，`npm test` 必须串行执行 unit、component、contract、integration、functional 和 Playwright end-to-end 全部六类测试，任一检查缺失或失败均停止，且不在失败后安装未声明 package。
 - Candidate 就绪：提交根 `Dockerfile` 与本迭代 `runtime/deployment.json`，供平台 CI 构建并验证同一不可变 image；Coding 不声称已获得 registry digest、远程部署、QA target、Independent QA、UAT、发布审批、Review 或 Merge 结果。
 - Independent QA 输入：Playwright 自动化必须支持真实成功、浏览器网络阻断失败、解除阻断后人工重试、连续失败恢复、唯一计时边界、axe-core 和键盘/焦点证据；人工辅助技术 WCAG 2.2 AA 结论及精确 Candidate 的远程结果由 Independent QA 产生。
