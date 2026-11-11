@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -105,5 +111,75 @@ describe("App loading lifecycle", () => {
     await expect(
       requestStatus(new AbortController().signal, fetch),
     ).resolves.toBe("ok");
+  });
+
+  it("moves only the current generation into failure", () => {
+    const loading = statusReducer(initialStatusState, {
+      type: "begin",
+      generation: 2,
+    });
+    const failure = statusReducer(loading, {
+      type: "fail",
+      generation: 2,
+    });
+
+    expect(failure).toEqual({ kind: "failure", generation: 2 });
+    expect(statusReducer(failure, { type: "fail", generation: 1 })).toBe(
+      failure,
+    );
+  });
+
+  it("increments generation and starts one request for each manual retry", async () => {
+    let rejectSecond!: (reason: Error) => void;
+    const second = new Promise<"ok">((_resolve, reject) => {
+      rejectSecond = reject;
+    });
+    const requestStatus = vi
+      .fn<() => Promise<"ok">>()
+      .mockRejectedValueOnce(new Error("first"))
+      .mockReturnValueOnce(second)
+      .mockResolvedValueOnce("ok");
+    render(<App requestStatus={requestStatus} />);
+
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    expect(screen.getByRole("status").textContent).toBe("正在获取状态");
+    expect(screen.queryByRole("button")).toBeNull();
+    rejectSecond(new Error("second"));
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("status").textContent).toBe("ok"),
+    );
+    expect(requestStatus).toHaveBeenCalledTimes(3);
+  });
+
+  it("discards a late result from an older generation", async () => {
+    let resolveFirst!: (status: "ok") => void;
+    const first = new Promise<"ok">((resolve) => {
+      resolveFirst = resolve;
+    });
+    const requestStatus = vi
+      .fn<() => Promise<"ok">>()
+      .mockReturnValueOnce(first)
+      .mockRejectedValueOnce(new Error("current failure"));
+    const current = statusReducer(initialStatusState, {
+      type: "begin",
+      generation: 2,
+    });
+    const failed = statusReducer(current, { type: "fail", generation: 2 });
+
+    resolveFirst("ok");
+    await first;
+
+    expect(
+      statusReducer(failed, {
+        type: "succeed",
+        generation: 1,
+        status: "ok",
+      }),
+    ).toBe(failed);
+    expect(requestStatus).not.toHaveBeenCalled();
   });
 });

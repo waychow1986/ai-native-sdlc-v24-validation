@@ -24,6 +24,9 @@ export async function requestStatus(
     once: true,
   });
   const timeout = setTimeout(() => timeoutController.abort(), 2_500);
+  if (signal.aborted) {
+    abortRequest();
+  }
 
   try {
     const response = await fetchImplementation("/api/status", {
