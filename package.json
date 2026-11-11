@@ -10,7 +10,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint --no-error-on-unmatched-pattern --max-warnings 0 \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\" vite.config.ts",
+    "lint": "eslint --no-error-on-unmatched-pattern --max-warnings 0 \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\" vite.config.ts",
     "check": "npm run typecheck && npm run lint",
     "build:client": "vite build --mode client",
     "build:server": "vite build --mode server",
@@ -75,7 +75,7 @@
     "@typescript-eslint/parser": "8.72.2",
     "@vitejs/plugin-react": "5.1.1",
     "axe-core": "4.14.0",
-    "eslint": "9.39.5",
+    "eslint": "8.57.1",
     "eslint-plugin-react": "7.37.5",
     "eslint-plugin-react-hooks": "7.1.1",
     "jsdom": "27.0.1",

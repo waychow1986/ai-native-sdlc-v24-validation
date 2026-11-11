@@ -18,12 +18,12 @@
 
 ## Phase 1：Setup
 
-- [ ] T001 按 TD-001、TD-010 和 Quickstart 固定 Node.js 24、TypeScript 5.9、React 19、Vite 7、Fastify 5、Vitest、Playwright、axe-core、ESLint 及适配 TypeScript/React 的 lint 依赖与项目脚本，确保 `check`、`build`、`test` 使用 lockfile 安装的本地 CLI，且 `test` 串行聚合 unit、component、contract、integration、functional 与 Playwright end-to-end 测试（`package.json`；来源：TD-001、TD-010、验证环境责任矩阵、Quickstart 1～5；依赖：无；完成证据：manifest 中的固定版本、本地 CLI、lint 依赖与强制聚合全部六类测试套件的 script 声明可审查）
-- [ ] T002 根据 T001 生成并提交可供 `npm ci` 在 clean runner 复现的完整 npm lockfile（`package-lock.json`；来源：TD-010、Quickstart 1；依赖：T001；完成证据：`npm ci` 严格使用 lockfile 的安装输出）
-- [ ] T003 [P] 配置客户端、服务端和测试所需的严格 TypeScript no-emit 边界，并在 manifest 内配置覆盖 `src/`、`tests/`、`vite.config.ts` 的 TypeScript/React lint 规则、零 warning 失败策略以及先 TypeScript 后 lint 的串行 `check` 聚合，禁止运行时临时安装工具（`tsconfig.json`、`package.json`；来源：TD-001、验证环境责任矩阵、Quickstart 3 及其 `npm run check` 契约；依赖：T001；完成证据：clean runner 经 T002 安装后执行 `npm run check`，保留 TypeScript no-emit 与项目 lint 两段真实 stdout/stderr 和统一退出码，任一失败均使聚合非零退出）
-- [ ] T004 [P] 配置 React 构建、服务端构建、测试环境及生产静态产物边界，不增加 client-side 业务路由（`vite.config.ts`；来源：TD-001、TD-010、页面与静态协议；依赖：T001；完成证据：`npm run build` 生成约定客户端和服务端产物）
-- [ ] T005 [P] 忽略 `node_modules/`、`dist/`、`coverage/`、`playwright-report/`、`test-results/` 和 `.env*`，且不新增 `.env.example`（`.gitignore`；来源：Component 边界与项目结构；依赖：T001；完成证据：本地输出与环境文件均不进入 Git 候选变更）
-- [ ] T006 [P] 从容器构建上下文排除本地输出、`.git/` 和 `.ai-delivery/`（`.dockerignore`；来源：Component 边界与项目结构、TD-010；依赖：T001；完成证据：容器构建上下文不包含所列目录）
+- [x] T001 按 TD-001、TD-010 和 Quickstart 固定 Node.js 24、TypeScript 5.9、React 19、Vite 7、Fastify 5、Vitest、Playwright、axe-core、ESLint 及适配 TypeScript/React 的 lint 依赖与项目脚本，确保 `check`、`build`、`test` 使用 lockfile 安装的本地 CLI，且 `test` 串行聚合 unit、component、contract、integration、functional 与 Playwright end-to-end 测试（`package.json`；来源：TD-001、TD-010、验证环境责任矩阵、Quickstart 1～5；依赖：无；完成证据：manifest 中的固定版本、本地 CLI、lint 依赖与强制聚合全部六类测试套件的 script 声明可审查）
+- [x] T002 根据 T001 生成并提交可供 `npm ci` 在 clean runner 复现的完整 npm lockfile（`package-lock.json`；来源：TD-010、Quickstart 1；依赖：T001；完成证据：`npm ci` 严格使用 lockfile 的安装输出）
+- [x] T003 [P] 配置客户端、服务端和测试所需的严格 TypeScript no-emit 边界，并在 manifest 内配置覆盖 `src/`、`tests/`、`vite.config.ts` 的 TypeScript/React lint 规则、零 warning 失败策略以及先 TypeScript 后 lint 的串行 `check` 聚合，禁止运行时临时安装工具（`tsconfig.json`、`package.json`；来源：TD-001、验证环境责任矩阵、Quickstart 3 及其 `npm run check` 契约；依赖：T001；完成证据：clean runner 经 T002 安装后执行 `npm run check`，保留 TypeScript no-emit 与项目 lint 两段真实 stdout/stderr 和统一退出码，任一失败均使聚合非零退出）
+- [x] T004 [P] 配置 React 构建、服务端构建、测试环境及生产静态产物边界，不增加 client-side 业务路由（`vite.config.ts`；来源：TD-001、TD-010、页面与静态协议；依赖：T001；完成证据：`npm run build` 生成约定客户端和服务端产物）
+- [x] T005 [P] 忽略 `node_modules/`、`dist/`、`coverage/`、`playwright-report/`、`test-results/` 和 `.env*`，且不新增 `.env.example`（`.gitignore`；来源：Component 边界与项目结构；依赖：T001；完成证据：本地输出与环境文件均不进入 Git 候选变更）
+- [x] T006 [P] 从容器构建上下文排除本地输出、`.git/` 和 `.ai-delivery/`（`.dockerignore`；来源：Component 边界与项目结构、TD-010；依赖：T001；完成证据：容器构建上下文不包含所列目录）
 
 ## Phase 2：Foundational
 
