@@ -128,3 +128,71 @@ CI、image publication、远程部署、Candidate identity、Independent QA、UA
 **本批次完成 Phase 1 Setup 的 T001～T006，并在 6 项上限内停止。** 已提交固定依赖与 lockfile、严格 TypeScript/lint、可验证的双目标 build、六类串行测试入口及 Git/container ignore 边界。format、静态检查、setup build、测试 discovery 聚合与 dependency audit 在当前 sandbox 通过；不存在用户可见实现或产品场景通过声明。
 
 下一依赖就绪工作从 Phase 2 的 test-first T007～T008 开始。上述精确 Node 24 和 Playwright system dependency 限制、四项被 override 的风险及全部下游平台证据继续保留，不部署、不审批、不合并。
+
+## Coding Session coding-attempt-01-batch-03-operation-019
+
+### 实施范围
+
+本 Session 采用 `coding-continuation` 模式，实施下一依赖就绪阶段 Phase 2 Foundational 的 T007～T009，共 3 项。先创建 T007、T008 测试并在依赖安装后取得因生产模块尚不存在而失败的 test-first 证据，再实现 T009；未开始产品页面、`GET /api/status` 或任何 User Story。
+
+实现建立可注入 Fastify 应用、严格 `PORT`/`LOG_LEVEL`/`TRUST_PROXY` 解析、16 KiB 请求体上限、安全响应头、稳定错误映射、日志字段白名单、`0.0.0.0` 监听、信号驱动优雅退出，以及相互独立的 `/health/live`、`/health/ready` 空 `204` 运维端点。非法配置在创建或监听应用前返回非零启动结果。
+
+### 变更文件
+
+| 路径 | 变更 | 来源任务 |
+|---|---|---|
+| `tests/unit/server-foundation.test.ts` | 新增配置、日志序列化、安全响应头、请求体上限、API 错误、优雅退出及非法配置非零退出测试 | T007 |
+| `tests/contract/health.test.ts` | 新增两个健康端点的 `204`、空 body、无环境详情及产品 API 隔离 contract test | T008 |
+| `src/server/app.ts` | 实现严格配置解析、可注入 Fastify 应用、日志白名单、安全响应头、请求上限和稳定错误处理 | T009 |
+| `src/server/index.ts` | 实现监听、启动错误分类、信号注册和幂等优雅退出 | T009 |
+| `src/server/routes/health.ts` | 实现 liveness/readiness 空 `204` 运维路由 | T009 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/tasks-implementation.md` | 仅将已有实现及通过证据的 T007～T009 checkbox 改为完成 | T007～T009 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/reports/implementation.md` | 仅在既有不可变前缀末尾追加本 Session 证据 | Coding 账本契约 |
+
+### 需求与场景覆盖
+
+| Intent / Specification Scenario | 实现路径 | 测试路径 | 结果 |
+|---|---|---|---|
+| TD-002、TD-008 / 配置、可观测性与安全边界 | `src/server/app.ts`、`src/server/index.ts` | `tests/unit/server-foundation.test.ts` | 6/6 unit 测试通过；非法 `PORT`、`LOG_LEVEL`、`TRUST_PROXY`、敏感错误泄露、重复 shutdown 和超限 body 均有定向断言 |
+| 运维接口 / 验证环境责任矩阵 | `src/server/routes/health.ts` | `tests/contract/health.test.ts` | 3/3 contract 测试通过；两个端点均为空 `204`，且 `/api/health/ready` 保持产品命名空间 `404` |
+| INT-001～INT-015 / US-001～US-003 / IQA-001～IQA-008 | 本批次明确不实现产品页面或状态 API | 聚合入口完成六类套件执行；当前只有 unit 与 health contract 有测试文件 | 未声称任何用户故事或验收场景通过；component、integration、functional、e2e 仍无测试文件，须由后续 test-first 任务补齐 |
+
+### 执行命令与结果
+
+| 命令 | 环境 | 结果 | 证据 |
+|---|---|---|---|
+| `npm run test:unit -- --reporter=verbose`、`npm run test:contract -- --reporter=verbose`（安装前） | Coding sandbox | 预期失败 | workspace 尚无 `node_modules/`，两个命令均以 `vitest: not found`、exit `127` 结束；随后按 lockfile 安装，不将该结果作为 test-first 行为证据 |
+| `npm ci` | Coding sandbox；Node `v22.23.4`、npm `10.9.9` | 通过并有 engine/deprecation warning | 从 lockfile 安装 438 packages，audit 为 0；manifest 固定 Node `24.22.2`，精确版本重跑继续由平台 CI 承担 |
+| `npm run test:unit -- --reporter=verbose`、`npm run test:contract -- --reporter=verbose`（生产实现前） | Coding sandbox | 按 test-first 预期失败 | 两个 suite 均被发现并执行加载，分别因 `src/server/app.js` 不存在以 exit `1` 失败 |
+| `npm run check` 与 focused unit/contract（实施迭代） | Coding sandbox | 先失败后通过 | TypeScript 先发现 Fastify `trustProxy`/serializer 类型问题，lint 随后发现未使用参数；定向修复后 TypeScript、lint、6 个 unit 和 3 个 contract 全部通过 |
+| `npm run format:check`、`npx --no-install prettier --check src tests` | Coding sandbox | 最终通过 | repository 配置文件及本批次全部源码/测试符合已安装 Prettier；首次源码检查发现 4 个文件格式差异并由同一本地 CLI 修复 |
+| `npm run check` | Coding sandbox | 通过 | `tsc --noEmit` 与零 warning ESLint 均以 0 退出 |
+| `npm run build` | Coding sandbox | 通过 | Vite 生成 `dist/client/index.html`、客户端 setup asset 与含当前 Fastify 实现的 `dist/server/index.js` |
+| `npm test` | Coding sandbox | 通过 | unit 6/6、contract 3/3；component、integration、functional、Playwright e2e 无文件并按已批准 `--passWithNoTests` 入口退出 0，不作为产品行为通过证据 |
+| built server smoke：Node 启动 `dist/server/index.js`、Fetch `/health/ready`、发送 `SIGTERM`，再以 `PORT=invalid` 启动 | Coding sandbox | 通过 | readiness 返回空 `204`；`SIGTERM` 后 exit `0`；非法配置输出稳定 `{"event":"configuration_rejected"}` 并 exit `1` |
+| `npm audit` | Coding sandbox | 通过 | 0 vulnerabilities |
+
+### Runtime 与下游门禁就绪制品
+
+本批次新增可构建、可启动的服务端 foundation 和健康端点，为后续页面、状态 API、容器 probe 与 runtime declaration 提供入口。根 `Dockerfile`、active Feature `runtime/deployment.json`、Candidate identity endpoint 和 developer functional test script 尚未到 T035～T036 及对应后续批准任务，本 Session 不提前创建或声称就绪。
+
+### 延后平台证据
+
+- Node `24.22.2` clean runner 对 lockfile 安装、静态分析、build 和聚合测试的重复结果由平台 CI 产生；当前 sandbox 是 Node `v22.23.4`。
+- 本批次没有用户可见实现；真实本地 integration、functional、Playwright 场景及其 trace/screenshot 必须在后续 User Story test-first 任务中形成。
+- Candidate SHA/image digest、容器 smoke、远程部署、QA target、Independent QA、WCAG 人工结论、UAT、发布审批、Review 与 Merge 均属于后续阶段，本 Session 未制造或声称这些证据。
+
+### 限制、剩余风险与阻塞项
+
+- `TASK-SELF-001`：T003 的声明依赖仍未改写；既有缓解证据保持为 batch-02 中 T002 lockfile 安装先于 T003 静态分析，本 Session 继续使用已安装 lockfile 依赖。
+- `TASK-SELF-002`：T004 的阶段证据风险仍由既有 setup fallback build 缓解；本批次创建真实 `src/server/index.ts` 后，最终 build 已自动改用该真实服务端 entry。
+- `TASK-SELF-003`：状态路径 request body 拒绝仍须在后续 T019/T024 的批准路径和任务范围内加入 contract test 与实现；本批次没有状态路由，不提前实施。
+- `TASK-SELF-004`：viewport 与 200% zoom 仍须在后续真实 Playwright 浏览器任务中验证，functional DOM 测试不得冒充布局证据；本批次没有页面测试。
+- 当前 sandbox Node 版本不是 manifest 固定的 `24.22.2`。本 Session 的本地命令真实通过，但精确 Node 24 结果仍是延后平台证据。
+- 当前 health readiness 只证明本批次 foundation 已初始化；产品页面和状态路由尚未实现，因此不将 health smoke 解释为任何用户可见场景通过。
+
+### 实施结论
+
+**本批次完成 Phase 2 Foundational 的 T007～T009，并在 3 项边界处停止。** 测试先于生产实现创建并保留预期失败证据；最终 format、TypeScript、lint、build、聚合测试、focused unit/contract、依赖审计及 built server 启停 smoke 在当前 Coding sandbox 通过。没有产品页面、状态 API、用户故事、runtime、部署或下游门禁完成声明。
+
+下一依赖就绪工作从 Phase 3 的 test-first T010～T014 开始。四项被 override 风险、精确 Node 24 重跑及全部平台下游证据继续保留，不部署、不审批、不合并。
