@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildApp } from "../../src/server/app.js";
 
@@ -6,6 +6,7 @@ const apps: ReturnType<typeof buildApp>[] = [];
 
 afterEach(async () => {
   await Promise.all(apps.splice(0).map((app) => app.close()));
+  vi.unstubAllEnvs();
 });
 
 describe("health endpoints", () => {
@@ -35,5 +36,39 @@ describe("health endpoints", () => {
 
     expect(productNamespace.statusCode).toBe(404);
     expect(productNamespace.json()).toEqual({ error: "not_found" });
+  });
+
+  it("reports candidate identity only from the platform environment", async () => {
+    vi.stubEnv("AIDELIVERY_DELIVERY_ID", "DLV-TEST");
+    vi.stubEnv("AIDELIVERY_CANDIDATE_SHA", "abc123");
+    const app = buildApp();
+    apps.push(app);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/candidate-identity",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(response.json()).toEqual({
+      deliveryId: "DLV-TEST",
+      candidateSha: "abc123",
+    });
+  });
+
+  it("does not invent candidate identity when platform inputs are absent", async () => {
+    vi.stubEnv("AIDELIVERY_DELIVERY_ID", "");
+    vi.stubEnv("AIDELIVERY_CANDIDATE_SHA", "");
+    const app = buildApp();
+    apps.push(app);
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/candidate-identity",
+    });
+
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ error: "candidate_identity_unavailable" });
   });
 });

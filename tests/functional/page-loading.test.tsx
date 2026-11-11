@@ -27,4 +27,22 @@ describe("minimal status page", () => {
     const result = await axe.run(container);
     expect(result.violations).toEqual([]);
   });
+
+  it("keeps the approved title and textual status in one semantic region", () => {
+    const { container } = render(
+      <App requestStatus={() => new Promise<"ok">(() => undefined)} />,
+    );
+
+    const main = screen.getByRole("main");
+    const heading = screen.getByRole("heading", {
+      level: 1,
+      name: "最小流程验证",
+    });
+    const status = screen.getByRole("status");
+
+    expect(main.contains(heading)).toBe(true);
+    expect(main.contains(status)).toBe(true);
+    expect(status.textContent).toBe("正在获取状态");
+    expect(container.querySelectorAll("section")).toHaveLength(1);
+  });
 });

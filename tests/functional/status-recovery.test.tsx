@@ -60,4 +60,20 @@ describe("failed status recovery journey", () => {
     expect(container.textContent).not.toContain("private diagnostic");
     expect(screen.queryByText("ok", { exact: true })).toBeNull();
   });
+
+  it("keeps failure meaning and retry available without color cues", async () => {
+    const requestStatus = vi.fn(async () => {
+      throw new Error("unavailable");
+    });
+    render(<App requestStatus={requestStatus} />);
+
+    const alert = await screen.findByRole("alert");
+    const retry = screen.getByRole("button", { name: "重试" });
+    const region = alert.closest("section");
+
+    expect(alert.textContent).toBe("状态获取失败，请重试");
+    expect(region).not.toBeNull();
+    expect(region?.contains(retry)).toBe(true);
+    expect(retry.type).toBe("button");
+  });
 });
