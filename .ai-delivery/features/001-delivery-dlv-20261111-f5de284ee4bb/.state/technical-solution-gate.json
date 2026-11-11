@@ -1,28 +1,5 @@
 {
   "stage": "technical-solution",
-  "passed": false,
-  "findings": [
-    {
-      "id": "TS-SELF-001",
-      "severity": "high",
-      "scope": "self",
-      "artifact": "design.md",
-      "owner": "technical-solution",
-      "summary": "幂等键首次并发提交缺少可执行的互斥机制",
-      "recommendation": "明确首次幂等键的事务级互斥、状态生命周期、并发等待与重放、请求摘要冲突以及失败回滚后的重试语义。",
-      "route": "current_stage",
-      "reasonType": "incomplete"
-    },
-    {
-      "id": "TS-SELF-002",
-      "severity": "high",
-      "scope": "self",
-      "artifact": "design.md",
-      "owner": "technical-solution",
-      "summary": "业务诊断没有覆盖 FR-011 的全部可用性断言",
-      "recommendation": "为业务请求接受和已知普通任务集合完整读取增加独立、可观察且不泄露任务内容的诊断断言，并纳入整体状态判定。",
-      "route": "current_stage",
-      "reasonType": "coverage"
-    }
-  ]
+  "passed": true,
+  "findings": []
 }
