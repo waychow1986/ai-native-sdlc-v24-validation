@@ -1,0 +1,28 @@
+{
+  "stage": "task-planning",
+  "passed": false,
+  "findings": [
+    {
+      "id": "TASK-SELF-001",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "tasks-implementation.md",
+      "owner": "task-planning",
+      "summary": "前端故事增量缺少可执行的装配路径",
+      "recommendation": "为各前端实现任务补充实际需要修改的组合根、任务卡、API client 和样式入口准确路径，并调整依赖，使每个 User Story 在实现后可独立构建、运行并通过先行测试。",
+      "route": "current_stage",
+      "reasonType": "coverage"
+    },
+    {
+      "id": "TASK-SELF-002",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "tasks-implementation.md",
+      "owner": "task-planning",
+      "summary": "OCI image 任务违反 test-first 且完成证据不足",
+      "recommendation": "在 Dockerfile 实现前设置可执行的 image 约束测试，覆盖 Node patch 一致性、build-stage 必需步骤、非 root runtime 和生产依赖/产物边界，并以测试通过作为实现完成证据。",
+      "route": "current_stage",
+      "reasonType": "incomplete"
+    }
+  ]
+}
