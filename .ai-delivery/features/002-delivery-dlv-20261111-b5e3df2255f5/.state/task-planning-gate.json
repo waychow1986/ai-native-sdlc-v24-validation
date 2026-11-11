@@ -1,0 +1,39 @@
+{
+  "stage": "task-planning",
+  "passed": false,
+  "findings": [
+    {
+      "id": "TASK-SELF-001",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "tasks-implementation.md",
+      "owner": "task-planning",
+      "summary": "强制 npm test 聚合遗漏 functional 测试套件",
+      "recommendation": "在 T001 的 npm test 聚合范围中明确纳入 tests/functional/，并统一任务级与总体验证证据的强制执行边界。",
+      "route": "current_stage",
+      "reasonType": "contradiction"
+    },
+    {
+      "id": "TASK-SELF-002",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "tasks-implementation.md",
+      "owner": "task-planning",
+      "summary": "T032 未保持 test-first 任务顺序",
+      "recommendation": "将 T032 拆为前置验收测试任务和后续样式实现任务，并更新后续依赖。",
+      "route": "current_stage",
+      "reasonType": "contradiction"
+    },
+    {
+      "id": "TASK-SELF-003",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "tasks-implementation.md",
+      "owner": "task-planning",
+      "summary": "Candidate 级 IQA-006 与 IQA-007 自动化输入未落实到 Playwright 任务",
+      "recommendation": "增加前置 Playwright 任务，覆盖 IQA-006 完整旅程边界及 IQA-007 的 axe、键盘与焦点自动化输入，并建立正确依赖。",
+      "route": "current_stage",
+      "reasonType": "coverage"
+    }
+  ]
+}
