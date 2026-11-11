@@ -90,12 +90,17 @@ test("IQA-003 and IQA-004 expose a safe failure and recover only after retry", a
   const app = buildApp();
   const origin = await app.listen({ host: "127.0.0.1", port: 0 });
   let requestCount = 0;
+  let releaseRecovery = (): void => undefined;
+  const pendingRecovery = new Promise<void>((resolve) => {
+    releaseRecovery = resolve;
+  });
   await page.route("**/api/status", async (route) => {
     requestCount += 1;
     if (requestCount === 1) {
       await route.abort("connectionfailed");
       return;
     }
+    await pendingRecovery;
     await route.continue();
   });
   const tracePath = testInfo.outputPath("iqa-003-004-trace.zip");
@@ -115,6 +120,7 @@ test("IQA-003 and IQA-004 expose a safe failure and recover only after retry", a
     const retryRequestedAt = Date.now();
     await page.getByRole("button", { name: "重试" }).click();
     await expect(page.getByRole("status")).toHaveText("正在获取状态");
+    releaseRecovery();
     await expect(page.getByRole("status")).toHaveText("ok");
     expect(Date.now() - retryRequestedAt).toBeLessThanOrEqual(3_000);
     expect(requestCount).toBe(2);
@@ -123,6 +129,7 @@ test("IQA-003 and IQA-004 expose a safe failure and recover only after retry", a
       fullPage: true,
     });
   } finally {
+    releaseRecovery();
     await context.tracing.stop({ path: tracePath });
     await app.close();
   }
