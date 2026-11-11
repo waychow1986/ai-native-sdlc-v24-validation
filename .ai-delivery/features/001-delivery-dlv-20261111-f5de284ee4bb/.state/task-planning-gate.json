@@ -1,0 +1,39 @@
+{
+  "stage": "task-planning",
+  "passed": false,
+  "findings": [
+    {
+      "id": "TASK-SELF-001",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "tasks-implementation.md",
+      "owner": "task-planning",
+      "summary": "集合冻结锁缺少测试先行的实现闭环",
+      "recommendation": "在三类 mutation 实现之前增加覆盖 shared/exclusive 集合锁、释放和并发行为的先行测试，明确统一集合锁实现路径，并让相关生产实现依赖这些测试。",
+      "route": "current_stage",
+      "reasonType": "coverage"
+    },
+    {
+      "id": "TASK-SELF-002",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "tasks-implementation.md",
+      "owner": "task-planning",
+      "summary": "运行生命周期与静态交付行为未按 test-first 规划",
+      "recommendation": "在 T065 前增加准确路径的先行测试，覆盖 migration 启动约束、终止排空、静态资源缓存和 SPA fallback，并让 T065 显式依赖这些测试。",
+      "route": "current_stage",
+      "reasonType": "incomplete"
+    },
+    {
+      "id": "TASK-SELF-003",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "tasks-implementation.md",
+      "owner": "task-planning",
+      "summary": "OCI Candidate 缺少可执行的容器运行验证任务",
+      "recommendation": "增加准确路径的 Candidate 容器验证任务，覆盖数据库与 migration 前置、容器启动和清理、三个健康端点及 probe 隔离，并保留真实输出和退出码。",
+      "route": "current_stage",
+      "reasonType": "coverage"
+    }
+  ]
+}
