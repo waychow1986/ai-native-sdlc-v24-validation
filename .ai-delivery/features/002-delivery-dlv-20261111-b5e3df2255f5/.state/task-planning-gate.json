@@ -8,8 +8,8 @@
       "scope": "self",
       "artifact": "tasks-implementation.md",
       "owner": "task-planning",
-      "summary": "强制 npm test 聚合遗漏 functional 测试套件",
-      "recommendation": "在 T001 的 npm test 聚合范围中明确纳入 tests/functional/，并统一任务级与总体验证证据的强制执行边界。",
+      "summary": "强制 npm test 聚合遗漏 unit 测试套件",
+      "recommendation": "将 unit 套件加入 T001、任务规则和完成证据中的 npm test 串行聚合范围，确保 T007 由唯一强制开发者测试入口执行。",
       "route": "current_stage",
       "reasonType": "contradiction"
     },
@@ -19,19 +19,8 @@
       "scope": "self",
       "artifact": "tasks-implementation.md",
       "owner": "task-planning",
-      "summary": "T032 未保持 test-first 任务顺序",
-      "recommendation": "将 T032 拆为前置验收测试任务和后续样式实现任务，并更新后续依赖。",
-      "route": "current_stage",
-      "reasonType": "contradiction"
-    },
-    {
-      "id": "TASK-SELF-003",
-      "severity": "high",
-      "scope": "self",
-      "artifact": "tasks-implementation.md",
-      "owner": "task-planning",
-      "summary": "Candidate 级 IQA-006 与 IQA-007 自动化输入未落实到 Playwright 任务",
-      "recommendation": "增加前置 Playwright 任务，覆盖 IQA-006 完整旅程边界及 IQA-007 的 axe、键盘与焦点自动化输入，并建立正确依赖。",
+      "summary": "未落实 Design 要求的 lint 检查",
+      "recommendation": "在 Design 授权的准确路径内增加 lint 工具、配置、check 聚合及完成证据任务，并明确其依赖和 clean runner 可执行性。",
       "route": "current_stage",
       "reasonType": "coverage"
     }
