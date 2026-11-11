@@ -48,9 +48,9 @@
 
 ### 实现
 
-- [ ] T021 [US1] 定义任务读取 schema 与 API client 类型；以 T016 的读取 contract 断言通过为证据（`packages/contracts/src/tasks-read.ts`；来源：`FR-001`、`FR-006`、`FR-009`、API contract；依赖：T016—T020）
-- [ ] T022 [US1] 实现普通任务 Repository、读取 service 与 GET routes；以 T016、T017 通过且 SQL 参数化、probe 被过滤为证据（`apps/server/src/tasks/task-repository.ts`、`apps/server/src/tasks/read-tasks.ts`、`apps/server/src/routes/tasks-read.ts`；来源：`TD-003`、`FR-001`、`FR-006`、`FR-009`；依赖：T021）
-- [ ] T023 [US1] 实现同源读取 client、看板加载/空/三状态/读取错误界面及完整纯文本任务卡；以 T018—T020 通过为证据（`apps/web/src/api/tasks.ts`、`apps/web/src/state/board-state.ts`、`apps/web/src/components/Board.tsx`、`apps/web/src/main.tsx`；来源：`US-001`、`FR-001`、`FR-006`、`NFR-007`、`IQA-001`；依赖：T022）
+- [ ] T021 [US1] 定义任务读取 schema 与 API client 类型并注册到共享导出/OpenAPI；以 T016 的读取 contract 断言通过为证据（`packages/contracts/src/tasks-read.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`FR-001`、`FR-006`、`FR-009`、API contract；依赖：T016—T020）
+- [ ] T022 [US1] 实现并注册普通任务 Repository、读取 service 与 GET routes；以 T016、T017 通过且 SQL 参数化、probe 被过滤为证据（`apps/server/src/tasks/task-repository.ts`、`apps/server/src/tasks/read-tasks.ts`、`apps/server/src/routes/tasks-read.ts`、`apps/server/src/app.ts`；来源：`TD-003`、`FR-001`、`FR-006`、`FR-009`；依赖：T021）
+- [ ] T023 [US1] 实现同源读取 client、看板加载/空/三状态/读取错误界面及完整纯文本任务卡；以 T018—T020 通过为证据（`apps/web/index.html`、`apps/web/src/api/tasks.ts`、`apps/web/src/state/board-state.ts`、`apps/web/src/components/Board.tsx`、`apps/web/src/main.tsx`；来源：`US-001`、`FR-001`、`FR-006`、`NFR-007`、`IQA-001`；依赖：T022）
 
 ## Phase 4：US2 - 创建任务
 
@@ -64,8 +64,8 @@
 
 ### 实现
 
-- [ ] T029 [US2] 定义创建、幂等 operation、replay 和标题错误 schema；以 T024 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-create.ts`、`packages/contracts/src/operations.ts`；来源：`TD-009`、创建 API contract；依赖：T024—T028）
-- [ ] T030 [US2] 实现 grapheme 校验、canonical request hash、幂等事务与创建 route；以 T024、T025、T028 通过且无重复 mutation 或遗留 `processing` 为证据（`apps/server/src/tasks/task-validation.ts`、`apps/server/src/idempotency/operation-repository.ts`、`apps/server/src/idempotency/request-hash.ts`、`apps/server/src/tasks/create-task.ts`、`apps/server/src/routes/tasks-create.ts`；来源：`TD-004`、`TD-005`、`FR-002`、`FR-003`、`FR-009`；依赖：T029）
+- [ ] T029 [US2] 定义创建、幂等 operation、replay 和标题错误 schema 并注册到共享导出/OpenAPI；以 T024 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-create.ts`、`packages/contracts/src/operations.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`TD-009`、创建 API contract；依赖：T024—T028）
+- [ ] T030 [US2] 实现并注册 grapheme 校验、canonical request hash、幂等事务与创建 route；以 T024、T025、T028 通过且无重复 mutation 或遗留 `processing` 为证据（`apps/server/src/tasks/task-validation.ts`、`apps/server/src/idempotency/operation-repository.ts`、`apps/server/src/idempotency/request-hash.ts`、`apps/server/src/tasks/create-task.ts`、`apps/server/src/routes/tasks-create.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`TD-005`、`FR-002`、`FR-003`、`FR-009`；依赖：T029）
 - [ ] T031 [US2] 实现受控创建表单、client 即时校验、服务端权威错误和成功反馈；以 T026、T027 通过且非法输入不改变集合为证据（`apps/web/src/components/CreateTaskForm.tsx`、`apps/web/src/state/create-task.ts`；来源：`US-002`、`FR-002`、`FR-003`、`FR-007`；依赖：T023、T030）
 
 ## Phase 5：US3 - 推进任务
@@ -80,8 +80,8 @@
 
 ### 实现
 
-- [ ] T037 [US3] 定义状态变更与错误 schema；以 T032 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-status.ts`；来源：`TD-009`、状态 API contract；依赖：T032—T036）
-- [ ] T038 [US3] 实现带任务行锁、幂等记录、版本递增和有界事务重试的状态变更 service 与 route；以 T032、T033、T036 通过为证据（`apps/server/src/tasks/change-task-status.ts`、`apps/server/src/routes/tasks-status.ts`；来源：`TD-004`、`FR-004`、`FR-007`—`FR-009`、SLO 与重试；依赖：T037）
+- [ ] T037 [US3] 定义状态变更与错误 schema 并注册到共享导出/OpenAPI；以 T032 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-status.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`TD-009`、状态 API contract；依赖：T032—T036）
+- [ ] T038 [US3] 实现并注册带任务行锁、幂等记录、版本递增和有界事务重试的状态变更 service 与 route；以 T032、T033、T036 通过为证据（`apps/server/src/tasks/change-task-status.ts`、`apps/server/src/routes/tasks-status.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`FR-004`、`FR-007`—`FR-009`、SLO 与重试；依赖：T037）
 - [ ] T039 [US3] 实现每张卡可选择另外两个状态的原生控件及确定性结果反馈；以 T034、T035 通过且界面不使用 optimistic mutation 为证据（`apps/web/src/components/TaskCard.tsx`、`apps/web/src/state/change-task-status.ts`；来源：`TD-006`、`TD-010`、`US-003`；依赖：T031、T038）
 
 ## Phase 6：US4 - 删除任务
@@ -96,8 +96,8 @@
 
 ### 实现
 
-- [ ] T045 [US4] 定义删除结果与 replay schema；以 T040 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-delete.ts`；来源：`TD-009`、删除 API contract；依赖：T040—T044）
-- [ ] T046 [US4] 实现带任务行锁和幂等 operation 的删除 service 与 route；以 T040、T041 通过且取消路径无服务端 mutation 为证据（`apps/server/src/tasks/delete-task.ts`、`apps/server/src/routes/tasks-delete.ts`；来源：`TD-004`、`FR-005`、`FR-007`—`FR-009`；依赖：T045）
+- [ ] T045 [US4] 定义删除结果与 replay schema 并注册到共享导出/OpenAPI；以 T040 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-delete.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`TD-009`、删除 API contract；依赖：T040—T044）
+- [ ] T046 [US4] 实现并注册带任务行锁和幂等 operation 的删除 service 与 route；以 T040、T041 通过且取消路径无服务端 mutation 为证据（`apps/server/src/tasks/delete-task.ts`、`apps/server/src/routes/tasks-delete.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`FR-005`、`FR-007`—`FR-009`；依赖：T045）
 - [ ] T047 [US4] 实现受控可访问删除确认组件和删除反馈状态；以 T042—T044 通过为证据（`apps/web/src/components/DeleteTaskDialog.tsx`、`apps/web/src/state/delete-task.ts`；来源：`TD-006`、`US-004`、`NFR-005`；依赖：T039、T046）
 
 ## Phase 7：US5 - 连续可靠地使用看板
@@ -112,7 +112,7 @@
 
 ### 实现
 
-- [ ] T053 [US5] 完成 operation 查询、锁等待、canonical replay 与 transient failure schema/route；以 T048、T049 通过为证据（`packages/contracts/src/operation-query.ts`、`apps/server/src/idempotency/query-operation.ts`、`apps/server/src/routes/operations.ts`；来源：`TD-004`、`FR-009`、operation API contract；依赖：T048—T052）
+- [ ] T053 [US5] 完成并注册 operation 查询、锁等待、canonical replay 与 transient failure schema/route；以 T048、T049 通过为证据（`packages/contracts/src/operation-query.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`、`apps/server/src/idempotency/query-operation.ts`、`apps/server/src/routes/operations.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`FR-009`、operation API contract；依赖：T048—T052）
 - [ ] T054 [US5] 实现写操作未知结果协调、最后确认快照、sessionStorage 未决 key、安全原键重试和可理解恢复反馈；以 T050—T052 通过且已生效分支不重复 mutation 为证据（`apps/web/src/state/write-recovery.ts`、`apps/web/src/components/OperationFeedback.tsx`；来源：`FR-007`—`FR-009`、`NFR-002`、`TD-010`；依赖：T047、T053）
 - [ ] T055 [US5] 实现三列到纵向布局、完整文本、安全纯文本呈现、键盘焦点和 ARIA live 样式；以 T050 的视口、放大、键盘、axe-core 与特殊文本断言通过为证据（`apps/web/src/styles/board.css`、`apps/web/src/styles/accessibility.css`；来源：`FR-010`、`NFR-003`、`NFR-005`、`NFR-007`、`TD-006`；依赖：T054）
 
@@ -128,8 +128,8 @@
 
 ### 实现
 
-- [ ] T061 [US6] 定义三类健康响应与固定受影响能力 schema；以 T056 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/health.ts`；来源：`TD-009`、健康 API contract；依赖：T056—T060）
-- [ ] T062 [US6] 实现 live、migration-aware ready、受锁保护的 loopback 业务诊断、普通集合摘要比对、内部 probe CRUD 和清理 routes；以 T056—T060 通过且响应/日志均无任务内容、摘要、token 或凭据为证据（`apps/server/src/diagnostics/business-diagnostic.ts`、`apps/server/src/diagnostics/probe-context.ts`、`apps/server/src/routes/health.ts`；来源：`TD-007`、`FR-011`、`NFR-006`、配置与可观测性；依赖：T061）
+- [ ] T061 [US6] 定义三类健康响应与固定受影响能力 schema 并注册到共享导出/OpenAPI；以 T056 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/health.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`TD-009`、健康 API contract；依赖：T056—T060）
+- [ ] T062 [US6] 实现并注册 live、migration-aware ready、受锁保护的 loopback 业务诊断、普通集合摘要比对、内部 probe CRUD 和清理 routes；以 T056—T060 通过且响应/日志均无任务内容、摘要、token 或凭据为证据（`apps/server/src/diagnostics/business-diagnostic.ts`、`apps/server/src/diagnostics/probe-context.ts`、`apps/server/src/routes/health.ts`、`apps/server/src/app.ts`；来源：`TD-007`、`FR-011`、`NFR-006`、配置与可观测性；依赖：T061）
 
 ## Phase 9：Polish
 
