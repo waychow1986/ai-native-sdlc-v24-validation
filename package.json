@@ -1,0 +1,90 @@
+{
+  "name": "minimal-status-page",
+  "version": "1.0.0",
+  "description": "最小流程验证状态页",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.22.2",
+    "npm": "10.9.9"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint --no-error-on-unmatched-pattern --max-warnings 0 \"src/**/*.{ts,tsx}\" \"tests/**/*.{ts,tsx}\" vite.config.ts",
+    "check": "npm run typecheck && npm run lint",
+    "build:client": "vite build --mode client",
+    "build:server": "vite build --mode server",
+    "build": "npm run build:client && npm run build:server",
+    "test:unit": "vitest run tests/unit --passWithNoTests",
+    "test:component": "vitest run tests/component --passWithNoTests",
+    "test:contract": "vitest run tests/contract --passWithNoTests",
+    "test:integration": "vitest run tests/integration --passWithNoTests",
+    "test:functional": "vitest run tests/functional --passWithNoTests",
+    "test:e2e": "playwright test tests/e2e --pass-with-no-tests",
+    "test": "npm run test:unit && npm run test:component && npm run test:contract && npm run test:integration && npm run test:functional && npm run test:e2e",
+    "format:check": "prettier --check package.json tsconfig.json vite.config.ts"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "browser": true,
+      "es2022": true,
+      "node": true
+    },
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "ecmaVersion": "latest",
+      "sourceType": "module",
+      "ecmaFeatures": {
+        "jsx": true
+      }
+    },
+    "plugins": [
+      "@typescript-eslint",
+      "react",
+      "react-hooks"
+    ],
+    "settings": {
+      "react": {
+        "version": "detect"
+      }
+    },
+    "rules": {
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": "error",
+      "react/jsx-no-target-blank": "error",
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "error"
+    }
+  },
+  "dependencies": {
+    "fastify": "5.12.8",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.65.0",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.9",
+    "@types/node": "24.10.13",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@typescript-eslint/eslint-plugin": "8.72.2",
+    "@typescript-eslint/parser": "8.72.2",
+    "@vitejs/plugin-react": "5.1.1",
+    "axe-core": "4.14.0",
+    "eslint": "9.39.5",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "jsdom": "27.0.1",
+    "prettier": "3.10.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.8",
+    "vitest": "5.1.0"
+  },
+  "overrides": {
+    "minimatch": "11.0.3"
+  }
+}
