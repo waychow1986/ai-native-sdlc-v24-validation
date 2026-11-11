@@ -52,16 +52,16 @@
 
 ### 测试
 
-- [ ] T019 [P] [US2] 先编写 `GET /api/status` wire contract test，覆盖精确 `200`、JSON media type、`{"status":"ok"}`、禁止附加字段、`Cache-Control: no-store`、非 GET `405`/`Allow: GET`、未知 API `404` 和稳定无敏感错误 body（`tests/contract/status.test.ts`；来源：US-002、FR-002～FR-003、AC-003、产品接口 Contract；依赖：T018；完成证据：Fastify `inject` 对 status、header 和精确 body 的逐项断言）
-- [ ] T020 [P] [US2] 先编写真正启动 Fastify 后由 `status-client` 发出同源请求并只接受精确成功 schema 的 integration test（`tests/integration/status-success.test.ts`；来源：US-002、TD-003、架构概览 2～3、IQA-002；依赖：T018；完成证据：真实 HTTP server、浏览器 Fetch adapter 和 DOM 成功转换记录）
-- [ ] T021 [P] [US2] 先编写首次成功旅程的 functional test，验证处理中后仅显示区分大小写的“ok”、无重试按钮、无自动刷新或第二成功值（`tests/functional/status-success.test.tsx`；来源：US-002、FR-003、FR-007、AC-003、AC-008、IQA-002；依赖：T018；完成证据：完整用户可见成功状态及范围边界断言）
-- [ ] T022 [US2] 在现有 Playwright 文件中先追加 IQA-002 成功 end-to-end 场景及 3 秒状态门禁、单次请求和无刷新证据（`tests/e2e/status-page.spec.ts`；来源：IQA-002、NFR-001～NFR-002、AC-003、AC-011～AC-012；依赖：T013、T018；完成证据：真实本地应用的请求、状态转换、耗时和最终“ok”记录）
-- [ ] T023 [US2] 在现有 component 测试中先追加当前 generation 成功、精确 schema 接受及非 200/媒体类型/JSON/schema 拒绝的 focused unit test（`tests/component/App.test.tsx`；来源：US-002、TD-003～TD-005、状态不变量 2～3；依赖：T014、T018；完成证据：adapter 解析矩阵与 reducer 成功转换断言）
+- [x] T019 [P] [US2] 先编写 `GET /api/status` wire contract test，覆盖精确 `200`、JSON media type、`{"status":"ok"}`、禁止附加字段、`Cache-Control: no-store`、非 GET `405`/`Allow: GET`、未知 API `404` 和稳定无敏感错误 body（`tests/contract/status.test.ts`；来源：US-002、FR-002～FR-003、AC-003、产品接口 Contract；依赖：T018；完成证据：Fastify `inject` 对 status、header 和精确 body 的逐项断言）
+- [x] T020 [P] [US2] 先编写真正启动 Fastify 后由 `status-client` 发出同源请求并只接受精确成功 schema 的 integration test（`tests/integration/status-success.test.ts`；来源：US-002、TD-003、架构概览 2～3、IQA-002；依赖：T018；完成证据：真实 HTTP server、浏览器 Fetch adapter 和 DOM 成功转换记录）
+- [x] T021 [P] [US2] 先编写首次成功旅程的 functional test，验证处理中后仅显示区分大小写的“ok”、无重试按钮、无自动刷新或第二成功值（`tests/functional/status-success.test.tsx`；来源：US-002、FR-003、FR-007、AC-003、AC-008、IQA-002；依赖：T018；完成证据：完整用户可见成功状态及范围边界断言）
+- [x] T022 [US2] 在现有 Playwright 文件中先追加 IQA-002 成功 end-to-end 场景及 3 秒状态门禁、单次请求和无刷新证据（`tests/e2e/status-page.spec.ts`；来源：IQA-002、NFR-001～NFR-002、AC-003、AC-011～AC-012；依赖：T013、T018；完成证据：真实本地应用的请求、状态转换、耗时和最终“ok”记录）
+- [x] T023 [US2] 在现有 component 测试中先追加当前 generation 成功、精确 schema 接受及非 200/媒体类型/JSON/schema 拒绝的 focused unit test（`tests/component/App.test.tsx`；来源：US-002、TD-003～TD-005、状态不变量 2～3；依赖：T014、T018；完成证据：adapter 解析矩阵与 reducer 成功转换断言）
 
 ### 实现
 
-- [ ] T024 [US2] 实现并注册唯一产品路由及 schema、安全缓存和稳定错误 contract（`src/server/routes/status.ts`、`src/server/app.ts`；来源：FR-002～FR-003、TD-003、产品接口 Contract；依赖：T019～T023；完成证据：T019～T020 通过）
-- [ ] T025 [US2] 实现严格响应解析、2500 ms 超时、当前 generation 成功提交和“ok”成功视图，不增加自动重试或成功后刷新（`src/client/status-client.ts`、`src/client/App.tsx`；来源：FR-002～FR-003、TD-004～TD-005、AC-003、AC-008；依赖：T019～T024；完成证据：T020～T023 通过）
+- [x] T024 [US2] 实现并注册唯一产品路由及 schema、安全缓存和稳定错误 contract（`src/server/routes/status.ts`、`src/server/app.ts`；来源：FR-002～FR-003、TD-003、产品接口 Contract；依赖：T019～T023；完成证据：T019～T020 通过）
+- [x] T025 [US2] 实现严格响应解析、2500 ms 超时、当前 generation 成功提交和“ok”成功视图，不增加自动重试或成功后刷新（`src/client/status-client.ts`、`src/client/App.tsx`；来源：FR-002～FR-003、TD-004～TD-005、AC-003、AC-008；依赖：T019～T024；完成证据：T020～T023 通过）
 
 ## Phase 5：US3 - 从状态获取失败中人工恢复
 

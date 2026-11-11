@@ -11,7 +11,7 @@ describe("minimal status page", () => {
 
   it("shows only the approved title and perceivable loading region", async () => {
     const { container } = render(
-      <App requestStatus={() => new Promise(() => undefined)} />,
+      <App requestStatus={() => new Promise<"ok">(() => undefined)} />,
     );
 
     expect(

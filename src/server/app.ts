@@ -4,6 +4,7 @@ import { extname, resolve } from "node:path";
 import Fastify, { type FastifyInstance } from "fastify";
 
 import { registerHealthRoutes } from "./routes/health.js";
+import { registerStatusRoutes } from "./routes/status.js";
 
 const CONTENT_SECURITY_POLICY =
   "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'";
@@ -17,12 +18,12 @@ export interface ServerConfig {
 }
 
 interface AppOptions {
-  staticRoot: string;
+  staticRoot?: string;
+  registerStatusRoutes?: boolean;
 }
 
-const DEFAULT_APP_OPTIONS: AppOptions = {
-  staticRoot: resolve(process.cwd(), "dist/client"),
-};
+const DEFAULT_STATIC_ROOT = resolve(process.cwd(), "dist/client");
+const DEFAULT_APP_OPTIONS: AppOptions = {};
 
 function invalidConfiguration(): Error {
   return new Error("Invalid server configuration");
@@ -122,6 +123,7 @@ export function buildApp(
   }
   const app = Fastify({
     bodyLimit: 16 * 1024,
+    exposeHeadRoutes: false,
     trustProxy,
     logger: {
       base: undefined,
@@ -149,18 +151,24 @@ export function buildApp(
     await reply.code(404).type("text/plain").send("Not Found");
   });
 
-  app.setErrorHandler(async (error, _request, reply) => {
+  app.setErrorHandler(async (error, request, reply) => {
     if (record(error).code === "FST_ERR_CTP_BODY_TOO_LARGE") {
       await reply.code(413).send({ error: "payload_too_large" });
       return;
     }
     app.log.error({ error: "internal_error" }, "request_failed");
+    if (request.routeOptions.url === "/api/status") {
+      await reply.code(500).send({ error: "status_unavailable" });
+      return;
+    }
     await reply.code(500).send({ error: "internal_error" });
   });
 
   app.get("/", async (_request, reply) => {
     try {
-      const page = await readFile(resolve(options.staticRoot, "index.html"));
+      const page = await readFile(
+        resolve(options.staticRoot ?? DEFAULT_STATIC_ROOT, "index.html"),
+      );
       await reply.type("text/html; charset=utf-8").send(page);
     } catch {
       await reply.code(404).type("text/plain").send("Not Found");
@@ -176,7 +184,7 @@ export function buildApp(
 
     try {
       const asset = await readFile(
-        resolve(options.staticRoot, "assets", fileName),
+        resolve(options.staticRoot ?? DEFAULT_STATIC_ROOT, "assets", fileName),
       );
       const contentType =
         extname(fileName) === ".css"
@@ -189,6 +197,9 @@ export function buildApp(
   });
 
   void app.register(registerHealthRoutes);
+  if (options.registerStatusRoutes !== false) {
+    void app.register(registerStatusRoutes);
+  }
 
   return app;
 }
