@@ -1,0 +1,22 @@
+{
+  "sourceArtifacts": {
+    "reports/convergence.md": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "passed": false,
+  "blockers": [
+    {
+      "category": "missing",
+      "artifact": "tasks-implementation.md",
+      "path": "reports/task-planning-gate.md",
+      "description": "Task Planning 阶段门禁仍为失败，缺少 findings 为空且 passed 为 true 的必需前置门禁证据。",
+      "route": "platform-event"
+    },
+    {
+      "category": "partial",
+      "artifact": "design.md",
+      "path": "reports/implementation.md",
+      "description": "完整开发者验证仅在 Node.js 22 宿主执行，缺少批准的 Node.js 24.22.2 环境中的 setup、静态分析、build 与六类聚合测试通过证据。",
+      "route": "coding-repair"
+    }
+  ]
+}
