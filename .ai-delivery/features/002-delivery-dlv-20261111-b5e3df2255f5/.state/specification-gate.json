@@ -1,0 +1,28 @@
+{
+  "stage": "specification",
+  "passed": false,
+  "findings": [
+    {
+      "id": "SPEC-SELF-001",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "spec.md",
+      "owner": "specification",
+      "summary": "页面主体 2 秒可用门禁缺少可重复测量定义",
+      "recommendation": "为 2 秒门禁定义唯一、用户可观察且可重复执行的计时起点和完成条件，并同步 NFR、SC、AC 与 IQA 场景。",
+      "route": "current_stage",
+      "reasonType": "ambiguity"
+    },
+    {
+      "id": "SPEC-DERIVE-001",
+      "severity": "high",
+      "scope": "self",
+      "artifact": "spec.md",
+      "owner": "specification",
+      "summary": "未保留 approved Intent 中明确的 GET /api/status 约束",
+      "recommendation": "将 GET /api/status 作为产品接口约束明确写入相关需求、验收标准、IQA 场景及 INT-012 追踪关系，同时不引入实现设计。",
+      "route": "current_stage",
+      "reasonType": "coverage"
+    }
+  ]
+}
