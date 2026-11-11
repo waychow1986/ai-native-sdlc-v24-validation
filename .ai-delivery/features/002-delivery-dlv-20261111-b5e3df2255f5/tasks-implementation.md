@@ -13,7 +13,7 @@
 - Phase 2 是全部用户故事的阻塞前置条件；T009 依赖 T007～T008。
 - US1、US2、US3 均为 P1，但按产品状态旅程依次实施：Phase 3 依赖 T009，Phase 4 依赖 T018，Phase 5 依赖 T025。
 - 每个用户故事内先完成全部测试任务，再开始该故事的生产实现；同一测试文件的后续修改显式依赖其较早任务。
-- Phase 6 依赖全部用户故事实现完成；T033 依赖 T032，T034 依赖 T002、T006、T032。
+- Phase 6 依赖全部用户故事实现完成；T033 依赖 T032，T034 依赖 T002、T006、T033。
 
 ## Phase 1：Setup
 
@@ -79,7 +79,7 @@
 ## Phase 6：Polish
 
 - [ ] T032 按已批准安全边界完成跨故事样式与自动化可访问性收口，确保焦点可见、状态不只依靠颜色且在 320～1440 CSS 像素和 200% 放大下不丢失标题、状态或重试操作（`src/client/styles.css`、`tests/functional/page-loading.test.tsx`、`tests/functional/status-recovery.test.tsx`；来源：NFR-004、TD-006、AC-010、IQA-007；依赖：T031；完成证据：axe-core、键盘、焦点、viewport 与 zoom 自动化结果；人工辅助技术结论留给 Independent QA）
-- [ ] T033 创建固定 Node 24 基础 image digest 的 multi-stage production image，使用非 root 用户且仅包含 production dependencies 和构建产物，并以 `PORT=3000` 启动编译后的 Fastify 服务（`Dockerfile`；来源：TD-002、TD-010、安全/隐私/身份与 Secret、部署拓扑；依赖：T032；完成证据：本地 image 可构建并由平台 CI 执行非 root、端口、页面、API、liveness/readiness smoke）
+- [ ] T033 创建固定 Node 24 基础 image digest 的 multi-stage production image，使用非 root 用户且仅包含 production dependencies 和构建产物，并以 `PORT=3000` 启动编译后的 Fastify 服务（`Dockerfile`；来源：TD-002、TD-010、安全/隐私/身份与 Secret、部署拓扑；依赖：T032；完成证据：使用本地 OCI-compatible runtime 完成 image 构建及非 root、端口、页面、API、liveness/readiness smoke）
 - [ ] T034 声明幂等 `developerSetupCommands` 为 `npm ci`、`npx --no-install playwright install --with-deps chromium`，并仅声明非空分类 `staticAnalysis`=`npm run check`、`build`=`npm run build`、`developerTests`=`npm test`，同时记录根 Dockerfile、container port `3000` 及健康路径（`.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/runtime/deployment.json`；来源：治理与技术约束、验证环境责任矩阵、Quickstart；依赖：T002、T006、T033；完成证据：schema 校验通过，命令非 no-op、类别内唯一且可在 clean runner 按序执行）
 
 ## 完成证据
