@@ -175,6 +175,7 @@ test("IQA-006 and IQA-007 keep recovery minimal, keyboard-operable, and perceiva
       await route.abort("connectionfailed");
       return;
     }
+    await new Promise((resolve) => setTimeout(resolve, 50));
     await route.continue();
   });
 

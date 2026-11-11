@@ -15,9 +15,7 @@ export async function registerHealthRoutes(
     const deliveryId = process.env.AIDELIVERY_DELIVERY_ID;
     const candidateSha = process.env.AIDELIVERY_CANDIDATE_SHA;
     if (!deliveryId || !candidateSha) {
-      await reply
-        .code(503)
-        .send({ error: "candidate_identity_unavailable" });
+      await reply.code(503).send({ error: "candidate_identity_unavailable" });
       return;
     }
 

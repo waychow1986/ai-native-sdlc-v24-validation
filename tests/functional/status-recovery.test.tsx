@@ -74,6 +74,6 @@ describe("failed status recovery journey", () => {
     expect(alert.textContent).toBe("状态获取失败，请重试");
     expect(region).not.toBeNull();
     expect(region?.contains(retry)).toBe(true);
-    expect(retry.type).toBe("button");
+    expect(retry.getAttribute("type")).toBe("button");
   });
 });

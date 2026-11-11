@@ -69,6 +69,8 @@ describe("health endpoints", () => {
     });
 
     expect(response.statusCode).toBe(503);
-    expect(response.json()).toEqual({ error: "candidate_identity_unavailable" });
+    expect(response.json()).toEqual({
+      error: "candidate_identity_unavailable",
+    });
   });
 });

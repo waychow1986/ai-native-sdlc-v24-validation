@@ -412,3 +412,69 @@ CI、image publication、远程部署、Candidate identity、Independent QA、UA
 **本批次完成 Phase 5 US3 的 T026～T032，并在 7 项边界处停止。** 测试先于生产实现创建并保留预期失败证据；最终 dependency setup、format、TypeScript、lint、前后端 build、六类聚合测试、真实本地 Chromium 和依赖审计在当前 Coding sandbox 通过。用户可见覆盖新增明确失败、无自动重试、人工重试成功、连续失败恢复、键盘/焦点和自动化可访问性开发者证据，不声称 production runtime、部署或下游门禁完成。
 
 下一依赖就绪工作从 Phase 6 的 T033 开始。精确 Node 24 重跑、完整样式收口、production candidate 制品及全部平台下游证据继续保留，不部署、不审批、不合并。
+
+## Coding Session coding-attempt-01-batch-07-operation-023
+
+### 实施范围
+
+本 Session 采用 `coding-continuation` 模式，完成下一依赖就绪阶段 Phase 6 的 T033～T036，共 4 项。先在 functional 测试补充标题、文本状态、失败含义和重试操作的语义保持断言；viewport、200% zoom、键盘与焦点布局证据按 Stage Gate override 的推荐缓解继续由真实 Chromium 场景承担。随后完成响应式样式收口、固定 Node 24 digest 的非 root production image、分类 runtime 声明、匿名 Candidate identity endpoint 和部署后 developer functional 脚本。
+
+### 变更文件
+
+| 路径 | 变更 | 来源任务 |
+|---|---|---|
+| `tests/functional/page-loading.test.tsx`、`tests/functional/status-recovery.test.tsx` | 补充标题、状态、失败文本和原生重试操作在同一语义区域内保持可用且不依赖颜色的断言 | T033 |
+| `tests/e2e/status-page.spec.ts` | 为既有真实浏览器恢复请求加入确定性短暂延迟，使 loading 转换可观察；重跑 320/1440 viewport、200% zoom、键盘和焦点证据 | T033～T034、override `TASK-SELF-004` 缓解 |
+| `src/client/styles.css` | 收口窄 viewport/zoom 下的自适应间距、换行、最小操作尺寸、非颜色边框和可见焦点 | T034 |
+| `Dockerfile` | 新增固定 Node `24.22.2` amd64 digest 的 multi-stage build；最终 image 仅安装 production dependencies、复制构建产物并以 `node` 用户监听 `3000` | T035 |
+| `src/server/routes/health.ts`、`tests/contract/health.test.ts` | 新增匿名 `/candidate-identity`，只返回平台注入的 Delivery ID/Candidate SHA；缺失输入时稳定 `503`，不虚构 fallback | Coding runtime contract、T036 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/runtime/deployment.json` | 声明端口、readiness、Candidate identity、幂等 setup、三个必选验证类别和 functional 脚本 | T036 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/runtime/developer-functional-run.sh` | 新增部署后真实 Chromium 成功与网络失败后人工恢复场景，并写入规定 JSON 结果 | Coding runtime contract、T036 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/tasks-implementation.md` | 仅将具有实现与通过证据的 T033～T036 checkbox 改为完成 | T033～T036 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/reports/implementation.md` | 在不可变历史前缀末尾追加本 Session 证据 | Coding 账本契约 |
+
+### 需求与场景覆盖
+
+| Intent / Specification Scenario | 实现路径 | 测试路径 | 结果 |
+|---|---|---|---|
+| NFR-004 / AC-010 / IQA-007 / TD-006 | `src/client/styles.css` | `tests/functional/page-loading.test.tsx`、`tests/functional/status-recovery.test.tsx`、`tests/e2e/status-page.spec.ts` | functional 6/6、真实 Chromium 5/5 通过；320/1440 CSS 像素、200% zoom、键盘、焦点、axe 与非颜色文本证据通过 |
+| TD-002、TD-010 / production image | `Dockerfile` | 本地 OCI image build 与 container smoke | 固定 digest build 通过；容器以 UID `1000` 运行，暴露 `3000`，页面、API、liveness、readiness 与 Candidate identity smoke 通过，最终 image 不含 Vitest |
+| Runtime contract / IQA-001～IQA-005 | `src/server/routes/health.ts`、runtime 两个制品 | `tests/contract/health.test.ts`、`runtime/developer-functional-run.sh` | Candidate identity 有/无平台输入 contract 通过；functional 脚本针对本地 production container 的真实浏览器成功与人工恢复场景通过并生成规定 JSON |
+
+### 执行命令与结果
+
+| 命令 | 环境 | 结果 | 证据 |
+|---|---|---|---|
+| `npm ci` | Coding sandbox；Node `v22.23.4`、npm `10.9.9` | 通过并有 engine/deprecation warning | 严格从 lockfile 安装 438 packages，audit 439 packages 为 0 vulnerabilities；精确 Node 版本由 Docker build 覆盖 |
+| `npx --no-install playwright install --with-deps chromium` | Coding sandbox | 通过 | 系统依赖与 Chromium 1254、FFmpeg、headless shell 安装完成，browser cache 位于仓库外 |
+| 新增 Candidate identity contract（生产实现前） | Coding sandbox | 按 test-first 预期失败 | 两项新测试分别预期 `200`/`503`，实际均为未注册路由的 `404`；实现后 contract 聚合 21/21 通过 |
+| `npm run format:check`、`prettier --check`、`npm run check` | Coding sandbox | 通过 | 配置、源码、测试与 runtime JSON 格式通过；TypeScript no-emit 与零 warning ESLint 均 exit `0` |
+| `npm run build` | Coding sandbox | 通过 | Vite 生成客户端 HTML/CSS/JS 与可执行 `dist/server/index.js` |
+| `npm test` | Coding sandbox | 通过 | unit 6/6、component 13/13、contract 21/21、integration 3/3、functional 6/6、Playwright e2e 5/5；六类套件串行完成 |
+| `docker build --pull --tag minimal-status-page:phase6 .` 及最终 rebuild | 本地 Docker 28.0.4 | 通过 | Node `24.22.2` 固定 digest build 完成；本地 image ID `sha256:d1dabc7c512c5673815aeacff0bb5b7c769f9e2dfea37c489b6fe13c514cfca0` |
+| production container smoke + `developer-functional-run.sh` | 本地 Docker + 真实 Chromium | 通过 | 非 root、端口、页面、状态 API、两个 health endpoint、Candidate identity 和 production-only dependency 检查通过；结果 JSON 为 `passed:true` 且两个场景均通过 |
+| `npm audit`、diff secret pattern scan、`git diff --check` | Coding sandbox | 通过 | 0 vulnerabilities；未发现常见 secret/private key 模式；无 whitespace error |
+
+### Runtime 与下游门禁就绪制品
+
+根 `Dockerfile`、active Feature `runtime/deployment.json` 和可执行 `runtime/developer-functional-run.sh` 已就绪。runtime 声明仅含批准的两个 setup 命令及 `staticAnalysis`、`build`、`developerTests` 三个必选非空类别；readiness 为 `/health/ready`，Candidate identity 为 `/candidate-identity`，端口为 `3000`，不需要私有网络。应用不含外部 integration，functional 结果中的 `externalServices` 为空。
+
+### 延后平台证据
+
+- Node `24.22.2` clean runner 对完整 setup、`npm run check`、`npm run build`、`npm test` 的重复结果仍由平台 CI 产生；本地 Docker 已使用该精确 Node patch 构建应用，但 image 内 npm 为基础 image 自带 `11.19.1`，因此显示与 manifest npm `10.9.9` 不同的 engine warning。
+- 本地 functional smoke 使用明确的测试用 Delivery ID/Candidate SHA 验证“仅透传环境输入、不提供 fallback”的执行能力，不将这些值声称为平台分配的真实 Candidate 身份。
+- registry publication digest、远程部署、QA target、Independent QA 的精确 Candidate 结果、人工辅助技术 WCAG 2.2 AA、UAT、发布审批、Review 与 Merge 均由下游阶段产生，本 Session 未制造或声称这些证据。
+
+### 限制、剩余风险与阻塞项
+
+- `TASK-SELF-001`：既有缓解保持不变；本 Session 先执行 `npm ci` 再执行静态分析。
+- `TASK-SELF-002`：真实前后端源码已存在，宿主与 Node 24 production image build 均通过。
+- `TASK-SELF-003`：既有 request body 拒绝 contract 在本 Session 的 21/21 contract 聚合中继续通过。
+- `TASK-SELF-004`：functional 环境仅证明语义与交互不变量；320/1440 viewport、200% zoom、键盘、焦点与可见性继续由真实 Chromium T030 场景证明并在本 Session 重跑通过。人工辅助技术 WCAG 结论保留给 Independent QA。
+- 当前宿主 Node 为 `v22.23.4`，不等于 manifest 的 `24.22.2`；精确 Node 24 clean runner 全套验证仍是延后平台证据。
+
+### 实施结论
+
+**本批次完成 Phase 6 的 T033～T036，共 4 项。** 已形成响应式/可访问样式收口、固定 digest 非 root production image、分类 runtime 声明、Candidate identity 与部署后真实浏览器 functional 入口。mandatory local format、静态分析、build、六类聚合测试、本地 integration/functional、production container smoke、依赖审计及路径/secret 检查均通过。
+
+当前 T001～T036 已全部具有对应实现和 Coding 证据。下游平台必须针对同一不可变 Candidate 重新执行 CI、发布 image、远程部署、Independent QA、人工 WCAG、UAT 与审批；本 Session 到此停止，不部署、不审批、不合并。

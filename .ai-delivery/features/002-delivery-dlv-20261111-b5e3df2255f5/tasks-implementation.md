@@ -80,10 +80,10 @@
 
 ## Phase 6：Polish
 
-- [ ] T033 先在现有 functional 测试中追加 320～1440 CSS 像素、200% 放大、焦点可见和非纯颜色断言，验证标题、状态与适用的重试操作不丢失（`tests/functional/page-loading.test.tsx`、`tests/functional/status-recovery.test.tsx`；来源：NFR-004、TD-006、AC-010、IQA-007；依赖：T032；完成证据：样式收口前可执行的 viewport、zoom、焦点与非颜色验收断言）
-- [ ] T034 按已批准安全边界完成跨故事样式收口，确保焦点可见、状态不只依靠颜色且在 320～1440 CSS 像素和 200% 放大下不丢失标题、状态或重试操作（`src/client/styles.css`；来源：NFR-004、TD-006、AC-010、IQA-007；依赖：T033；完成证据：T030、T033 的 axe-core、键盘、焦点、viewport 与 zoom 自动化结果通过；人工辅助技术结论留给 Independent QA）
-- [ ] T035 创建固定 Node 24 基础 image digest 的 multi-stage production image，使用非 root 用户且仅包含 production dependencies 和构建产物，并以 `PORT=3000` 启动编译后的 Fastify 服务（`Dockerfile`；来源：TD-002、TD-010、安全/隐私/身份与 Secret、部署拓扑；依赖：T034；完成证据：使用本地 OCI-compatible runtime 完成 image 构建及非 root、端口、页面、API、liveness/readiness smoke）
-- [ ] T036 声明幂等 `developerSetupCommands` 为 `npm ci`、`npx --no-install playwright install --with-deps chromium`，并仅声明非空分类 `staticAnalysis`=`npm run check`、`build`=`npm run build`、`developerTests`=`npm test`，同时记录根 Dockerfile、container port `3000` 及健康路径（`.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/runtime/deployment.json`；来源：治理与技术约束、验证环境责任矩阵、Quickstart；依赖：T002、T003、T006、T035；完成证据：schema 校验通过，命令非 no-op、类别内唯一，且可在 clean runner 按序执行包含 TypeScript no-emit 与项目 lint 的 `npm run check`）
+- [x] T033 先在现有 functional 测试中追加 320～1440 CSS 像素、200% 放大、焦点可见和非纯颜色断言，验证标题、状态与适用的重试操作不丢失（`tests/functional/page-loading.test.tsx`、`tests/functional/status-recovery.test.tsx`；来源：NFR-004、TD-006、AC-010、IQA-007；依赖：T032；完成证据：样式收口前可执行的 viewport、zoom、焦点与非颜色验收断言）
+- [x] T034 按已批准安全边界完成跨故事样式收口，确保焦点可见、状态不只依靠颜色且在 320～1440 CSS 像素和 200% 放大下不丢失标题、状态或重试操作（`src/client/styles.css`；来源：NFR-004、TD-006、AC-010、IQA-007；依赖：T033；完成证据：T030、T033 的 axe-core、键盘、焦点、viewport 与 zoom 自动化结果通过；人工辅助技术结论留给 Independent QA）
+- [x] T035 创建固定 Node 24 基础 image digest 的 multi-stage production image，使用非 root 用户且仅包含 production dependencies 和构建产物，并以 `PORT=3000` 启动编译后的 Fastify 服务（`Dockerfile`；来源：TD-002、TD-010、安全/隐私/身份与 Secret、部署拓扑；依赖：T034；完成证据：使用本地 OCI-compatible runtime 完成 image 构建及非 root、端口、页面、API、liveness/readiness smoke）
+- [x] T036 声明幂等 `developerSetupCommands` 为 `npm ci`、`npx --no-install playwright install --with-deps chromium`，并仅声明非空分类 `staticAnalysis`=`npm run check`、`build`=`npm run build`、`developerTests`=`npm test`，同时记录根 Dockerfile、container port `3000` 及健康路径（`.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/runtime/deployment.json`；来源：治理与技术约束、验证环境责任矩阵、Quickstart；依赖：T002、T003、T006、T035；完成证据：schema 校验通过，命令非 no-op、类别内唯一，且可在 clean runner 按序执行包含 TypeScript no-emit 与项目 lint 的 `npm run check`）
 
 ## 完成证据
 
