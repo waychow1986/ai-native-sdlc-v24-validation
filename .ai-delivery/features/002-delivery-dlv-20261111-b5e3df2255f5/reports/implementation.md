@@ -478,3 +478,50 @@ CI、image publication、远程部署、Candidate identity、Independent QA、UA
 **本批次完成 Phase 6 的 T033～T036，共 4 项。** 已形成响应式/可访问样式收口、固定 digest 非 root production image、分类 runtime 声明、Candidate identity 与部署后真实浏览器 functional 入口。mandatory local format、静态分析、build、六类聚合测试、本地 integration/functional、production container smoke、依赖审计及路径/secret 检查均通过。
 
 当前 T001～T036 已全部具有对应实现和 Coding 证据。下游平台必须针对同一不可变 Candidate 重新执行 CI、发布 image、远程部署、Independent QA、人工 WCAG、UAT 与审批；本 Session 到此停止，不部署、不审批、不合并。
+
+## Coding Session coding-attempt-01-batch-08-operation-025
+
+### 实施范围
+
+本 Session 采用 `coding-repair` 模式，仅修复 Convergence `CONV-002`：在批准的固定 Node.js `24.22.2` 环境按 active Feature `runtime/deployment.json` 的声明顺序执行两个 setup 命令、静态分析、build 与包含六类套件的 `npm test`，并保留真实结果。首次完整运行在 Playwright 恢复场景发现 loading 状态断言与快速成功响应之间的竞态；先保留该失败，再通过受控释放第二次真实请求稳定测试证据，随后从 setup 开始完整重跑。未修改产品行为、runtime 声明或 `tasks-implementation.md`。
+
+### 变更文件
+
+| 路径 | 变更 | 来源任务 |
+|---|---|---|
+| `tests/e2e/status-page.spec.ts` | 在 IQA-003/IQA-004 恢复场景中以 Promise 控制第二次真实请求的释放：页面确定显示处理中状态后才继续请求，消除 Node 24 下快速响应越过可观察 loading 断言的竞态 | T029～T030 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/reports/implementation.md` | 在不可变历史前缀末尾追加本 Session 的 Node 24 修复与验证证据 | T001、T036、CONV-002 |
+
+### 需求与场景覆盖
+
+| Intent / Specification Scenario | 实现路径 | 测试路径 | 结果 |
+|---|---|---|---|
+| US-003 / FR-004～FR-006 / IQA-003～IQA-004 / AC-004～AC-006 | `src/client/App.tsx`、`src/client/status-client.ts`（未修改） | `tests/e2e/status-page.spec.ts` | 首次网络失败、失败提示、人工重试、可观察处理中状态及最终“ok”继续由真实 Fastify 与 Chromium 覆盖；修复后 Playwright 5/5 通过 |
+| TD-001、TD-010 / T001、T036 / Quickstart | `package.json`、active Feature `runtime/deployment.json`（未修改） | unit、component、contract、integration、functional、Playwright end-to-end 聚合入口 | 固定 Node.js `24.22.2` 环境中 setup、TypeScript、ESLint、客户端/服务端 build 与六类聚合测试完整通过 |
+
+### 执行命令与结果
+
+| 命令 | 环境 | 结果 | 证据 |
+|---|---|---|---|
+| `node --version`、`npm --version` | 固定 digest `node:24.22.2-bookworm-slim@sha256:c0a93797ee78814ae6d32fcca2561fdbbe423149c3f5389aad32d86e9fd85bd4` container | Node `v24.22.2`；npm `11.19.1` | 精确 Node patch 与 production `Dockerfile` 基础 image 一致；npm 对 manifest 的 `10.9.9` engine 产生 warning，未作为通过结果隐藏 |
+| `npm ci`、`npx --no-install playwright install --with-deps chromium`、`npm run check`、`npm run build`、`npm test`（首次） | 上述 Node.js `24.22.2` container；`CI=1`；browser cache 位于 container `/tmp` | setup、静态分析、build、前五类测试通过；Playwright 4/5，聚合 exit `1` | `npm ci` 安装 438 packages、0 vulnerabilities；IQA-003/IQA-004 在成功响应过快时未观察到 loading 文本，实际已显示“ok”；按首次失败停止，没有执行后续命令 |
+| `npm ci`、`npx --no-install playwright install --with-deps chromium`、`npm run check`、`npm run build`、`npm test`（修复后完整重跑） | 新的上述固定 Node.js `24.22.2` container；`CI=1`；browser cache 位于 container `/tmp` | 全部通过，container exit `0` | setup 完成；TypeScript no-emit 与零 warning ESLint 通过；Vite 客户端/服务端 build 通过；unit 6/6、component 13/13、contract 21/21、integration 3/3、functional 6/6、Playwright 5/5 串行通过 |
+
+### Runtime 与下游门禁就绪制品
+
+active Feature `runtime/deployment.json` 仍准确声明 `npm ci`、`npx --no-install playwright install --with-deps chromium`、`npm run check`、`npm run build`、`npm test`，本 Session 已在与 `Dockerfile` 相同固定 digest 的 Node.js `24.22.2` container 中按该顺序完整执行成功。根 `Dockerfile`、readiness、Candidate identity 与 developer functional 脚本未修改，其既有就绪证据保持不变。
+
+### 延后平台证据
+
+- 平台 CI 仍须针对集成后的精确提交 SHA 重跑声明命令并生成其独立结果；本 Session 的 Node 24 开发者证据不冒充未来 CI。
+- registry image digest、远程部署、QA target、Independent QA、人工 WCAG 2.2 AA、UAT、发布审批、Review 与 Merge 仍由下游阶段产生。
+
+### 限制、剩余风险与阻塞项
+
+- 明确的人类 Stage Gate override 覆盖的 `TASK-SELF-001`～`TASK-SELF-004` 历史风险保持原记录；本 Session 不重复修复或改写该门禁。既有缓解仍在：lockfile 安装先于静态分析、完整源码 build、request body 拒绝 contract、真实 Chromium viewport/zoom 验证。
+- 固定 Node image 自带 npm `11.19.1`，与 `package.json` 的 npm engine `10.9.9` 不同，因此 `npm ci` 输出 `EBADENGINE` warning；所有声明命令仍以 exit `0` 完成。该差异未改变本次明确要求的 Node.js `24.22.2` 环境结论，但平台应继续保留 warning 以供复核。
+- 首次 Node 24 聚合发现的测试竞态已经定向修复并通过完整 clean setup 重跑；未发现新的产品行为、安全、范围或技术不可实现阻塞。
+
+### 实施结论
+
+**完成。** `CONV-002` 所需的固定 Node.js `24.22.2` setup、静态分析、build 与六类聚合测试证据已取得；最终完整声明序列 exit `0`。本 Session 仅稳定批准场景的开发者测试并追加真实证据，不修改产品行为、技术决策、任务 checkbox 或平台 workflow，到此停止，不部署、不审批、不合并。
