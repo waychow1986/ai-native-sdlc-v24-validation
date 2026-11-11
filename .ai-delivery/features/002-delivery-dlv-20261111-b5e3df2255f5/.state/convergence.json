@@ -1,6 +1,6 @@
 {
   "sourceArtifacts": {
-    "reports/convergence.md": "0000000000000000000000000000000000000000000000000000000000000000"
+    "reports/convergence.md": "36b0e3584d91da5eeb549c20c0a9b61c2fef3f59dfdca6b74bfd71f86fc57e4e"
   },
   "passed": false,
   "blockers": [
@@ -8,14 +8,14 @@
       "category": "missing",
       "artifact": "tasks-implementation.md",
       "path": "reports/task-planning-gate.md",
-      "description": "Task Planning 阶段门禁仍为失败，缺少 findings 为空且 passed 为 true 的必需前置门禁证据。",
+      "description": "Task Planning \u9636\u6BB5\u95E8\u7981\u4ECD\u4E3A\u5931\u8D25\uFF0C\u7F3A\u5C11 findings \u4E3A\u7A7A\u4E14 passed \u4E3A true \u7684\u5FC5\u9700\u524D\u7F6E\u95E8\u7981\u8BC1\u636E\u3002",
       "route": "platform-event"
     },
     {
       "category": "partial",
       "artifact": "design.md",
       "path": "reports/implementation.md",
-      "description": "完整开发者验证仅在 Node.js 22 宿主执行，缺少批准的 Node.js 24.22.2 环境中的 setup、静态分析、build 与六类聚合测试通过证据。",
+      "description": "\u5B8C\u6574\u5F00\u53D1\u8005\u9A8C\u8BC1\u4EC5\u5728 Node.js 22 \u5BBF\u4E3B\u6267\u884C\uFF0C\u7F3A\u5C11\u6279\u51C6\u7684 Node.js 24.22.2 \u73AF\u5883\u4E2D\u7684 setup\u3001\u9759\u6001\u5206\u6790\u3001build \u4E0E\u516D\u7C7B\u805A\u5408\u6D4B\u8BD5\u901A\u8FC7\u8BC1\u636E\u3002",
       "route": "coding-repair"
     }
   ]
