@@ -67,4 +67,20 @@ describe("status API contract", () => {
     expect(response.json()).toEqual({ error: "not_found" });
     expect(response.body).not.toContain("must-not-appear");
   });
+
+  it("maps unexpected status failures to the stable product error", async () => {
+    const app = buildApp();
+    apps.push(app);
+    app.addHook("preHandler", async (request) => {
+      if (request.url === "/api/status") {
+        throw new Error("secret internal detail");
+      }
+    });
+
+    const response = await app.inject({ method: "GET", url: "/api/status" });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toEqual({ error: "status_unavailable" });
+    expect(response.body).not.toContain("secret internal detail");
+  });
 });

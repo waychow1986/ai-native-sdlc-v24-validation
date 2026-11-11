@@ -270,3 +270,75 @@ CI、image publication、远程部署、Candidate identity、Independent QA、UA
 **本批次完成 Phase 3 US1 的 T010～T018，并在 9 项边界处停止。** 测试先于生产实现创建并保留预期失败证据；最终 format、TypeScript、lint、前后端 build、六类聚合测试、Playwright Chromium、依赖安装与审计在当前 Coding sandbox 通过。用户可见覆盖仅限 IQA-001 的首页和未决 loading 状态，不声称成功、失败、恢复、runtime、部署或下游门禁完成。
 
 下一依赖就绪工作从 Phase 4 的 test-first T019～T023 开始。四项被 override 风险、精确 Node 24 重跑及全部平台下游证据继续保留，不部署、不审批、不合并。
+
+## Coding Session coding-attempt-01-batch-05-operation-021
+
+### 实施范围
+
+本 Session 采用 `coding-continuation` 模式，按 test-first 顺序完成 Phase 4 US2 的 T019～T025，共 7 项，未开始 Phase 5。先创建状态 API contract、真实本地 HTTP integration、首次成功 functional、IQA-002 Playwright end-to-end 和 component 解析矩阵测试，并取得路由、严格解析与成功 reducer 尚不存在的预期失败；随后实现唯一 `GET /api/status` 产品路由、request body 拒绝、稳定方法/未知 API 错误、严格客户端解析、2500 ms 超时和当前 generation 成功视图。
+
+依据 Stage Gate override 的推荐缓解，T019 明确增加带 request body 的状态请求拒绝测试，T024 在同一批准状态路由中返回稳定 `400 {"error":"invalid_request"}`，不暴露请求内容。页面成功后仅显示区分大小写的“ok”，不提供重试、自动刷新或第二成功值。
+
+### 变更文件
+
+| 路径 | 变更 | 来源任务 |
+|---|---|---|
+| `tests/contract/status.test.ts` | 新增精确成功 JSON、media type、no-store、非 GET 405/Allow、request body 拒绝及未知 API 稳定错误 contract test | T019 |
+| `tests/integration/status-success.test.ts` | 新增真实本地 Fastify、浏览器 Fetch adapter、单次同源请求及成功 DOM 转换测试 | T020 |
+| `tests/functional/status-success.test.tsx` | 新增 loading 到唯一“ok”、无重试及无自动刷新用户旅程测试 | T021 |
+| `tests/e2e/status-page.spec.ts` | 追加 IQA-002 的真实 Chromium、单次请求、3 秒门禁、无刷新及 trace/screenshot 证据；保留 IQA-001 可控 pending route | T022 |
+| `tests/component/App.test.tsx` | 追加当前 generation 成功 reducer、精确 schema 接受及非 200/media type/JSON/schema 拒绝矩阵 | T023 |
+| `src/server/routes/status.ts`、`src/server/app.ts` | 注册唯一状态路由及严格响应 schema、no-store、request body 拒绝、非 GET 稳定错误；提供仅供既有 pending 测试关闭默认状态路由的注入边界 | T024 |
+| `src/client/status-client.ts`、`src/client/App.tsx` | 实现严格 `200` JSON 精确 schema 解析、2500 ms 超时、Abort 传播、当前 generation 成功提交和“ok”视图 | T025 |
+| `tests/integration/page-loading.test.ts`、`tests/functional/page-loading.test.tsx` | 适配默认状态路由注册与 `Promise<"ok">` adapter 类型，继续验证 US1 未决状态 | T024～T025 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/tasks-implementation.md` | 仅将具有实现和通过证据的 T019～T025 checkbox 改为完成 | T019～T025 |
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/reports/implementation.md` | 在不可变历史前缀末尾追加本 Session 证据 | Coding 账本契约 |
+
+### 需求与场景覆盖
+
+| Intent / Specification Scenario | 实现路径 | 测试路径 | 结果 |
+|---|---|---|---|
+| US-002 / FR-002～FR-003 / AC-003 / 产品接口 Contract | `src/server/routes/status.ts`、`src/server/app.ts` | `tests/contract/status.test.ts` | 精确 `200 application/json; charset=utf-8`、`{"status":"ok"}`、无附加字段、`no-store`、非 GET `405`、request body `400`、未知 API `404` 和状态内部异常 `500 status_unavailable` 全部通过；8/8 定向 contract 断言通过 |
+| US-002 / TD-003～TD-005 / 状态不变量 2～3 | `src/client/status-client.ts`、`src/client/App.tsx` | `tests/component/App.test.tsx`、`tests/integration/status-success.test.ts` | 仅精确成功 schema 可进入当前 generation 的 success；非 200、错误 media type、无效 JSON、错误值和附加字段均被拒绝；component 10/10、integration 2/2 通过 |
+| IQA-002 / NFR-001～NFR-002 / AC-003、AC-008、AC-011～AC-012 | `src/client/App.tsx` | `tests/functional/status-success.test.tsx`、`tests/e2e/status-page.spec.ts` | 本地真实 Chromium 中单次请求在 3 秒内转换为唯一“ok”，无重试与自动刷新；functional 2/2、e2e 2/2 通过 |
+
+### 执行命令与结果
+
+| 命令 | 环境 | 结果 | 证据 |
+|---|---|---|---|
+| 新增五类测试后的 focused suite | Coding sandbox；Node `v22.23.4`、npm `10.9.9`；生产实现前 | 按 test-first 预期失败 | suite 被发现并执行，因 `/api/status` 尚为 `404`、成功 action/严格 adapter 尚不存在而 exit `1`；不将该结果作为完成证据 |
+| `npm ci` | Coding sandbox；Node `v22.23.4`、npm `10.9.9` | 通过并有 engine/deprecation warning | 严格从 lockfile 安装 438 packages，audit 为 0；manifest 固定 Node `24.22.2`，精确版本重跑由平台 CI 承担 |
+| `npx --no-install playwright install --with-deps chromium` | Coding sandbox | 通过 | 已安装/确认 Chromium 1254 及系统依赖，命令 exit `0`；浏览器 cache 位于仓库外 |
+| `npm run format:check`、`npx --no-install prettier --check src tests` | Coding sandbox | 通过 | 配置、全部源码和测试均符合已安装 Prettier |
+| `npm run check` | Coding sandbox | 通过 | TypeScript no-emit 与零 warning ESLint 均 exit `0` |
+| `npm run build` | Coding sandbox | 通过 | Vite 生成客户端 HTML/CSS/JS 与可执行 `dist/server/index.js` |
+| `npm test` | Coding sandbox | 通过 | unit 6/6、component 10/10、contract 12/12、integration 2/2、functional 2/2、Playwright e2e 2/2；六类套件串行完成 |
+| `npm audit` | Coding sandbox | 通过 | 0 vulnerabilities |
+
+### Runtime 与下游门禁就绪制品
+
+本批次形成可构建的固定状态 API、严格浏览器 adapter、成功状态 UI，以及可在真实本地 Fastify 和 Chromium 执行的 IQA-002 自动化入口。Playwright 实际生成 trace/screenshot 到被忽略的 `test-results/`，证明证据采集能力而不提交 session-only 输出。
+
+根 `Dockerfile`、active Feature `runtime/deployment.json`、Candidate identity endpoint 和 developer functional test script 仍由后续批准任务完成；本 Session 不提前创建或声称 production candidate 已就绪。
+
+### 延后平台证据
+
+- Node `24.22.2` clean runner 对 lockfile 安装、静态分析、build 和六类聚合测试的重复结果由平台 CI 产生；当前 sandbox 是 Node `v22.23.4`。
+- 本地 IQA-002 Playwright 结果是开发者证据，不能替代精确不可变 Candidate 的 Independent QA 成功场景结果。
+- 失败、人工重试、连续失败恢复、viewport/zoom 及完整 WCAG 2.2 AA 证据由后续任务和 Independent QA 按批准责任矩阵产生。
+- Candidate SHA/image digest、容器 smoke、远程部署、QA target、UAT、发布审批、Review 与 Merge 均属于后续阶段，本 Session 未制造或声称这些证据。
+
+### 限制、剩余风险与阻塞项
+
+- `TASK-SELF-001`：既有缓解保持不变，T002 lockfile 安装先于静态分析；本 Session 再次以 `npm ci` 安装后执行全部检查。
+- `TASK-SELF-002`：真实应用 entry 已存在，完整前后端 build 在本 Session 通过。
+- `TASK-SELF-003`：已按 override 推荐缓解完成；T019 测试和 T024 实现共同证明状态路径 request body 被稳定拒绝。
+- `TASK-SELF-004`：viewport 与 200% zoom 仍须在后续 T030/T033/T034 的真实 Playwright 浏览器任务中验证；本批次没有用 functional DOM 测试冒充布局证据。
+- 当前 sandbox Node 版本不是 manifest 固定的 `24.22.2`；本地命令真实通过，但精确 Node 24 结果仍为延后平台证据。
+- US2 仅完成成功状态；失败归一化、失败提示、人工重试和迟到失败结果防护属于 T026～T032，本 Session 未提前实现。
+
+### 实施结论
+
+**本批次完成 Phase 4 US2 的 T019～T025，并在 7 项边界处停止。** 测试先于生产实现创建并保留预期失败证据；最终 dependency setup、format、TypeScript、lint、前后端 build、六类聚合测试、真实本地 Chromium 和依赖审计在当前 Coding sandbox 通过。用户可见覆盖新增 IQA-002 首次成功旅程，不声称失败恢复、runtime、部署或下游门禁完成。
+
+下一依赖就绪工作从 Phase 5 的 test-first T026～T031 开始。尚未到期的 viewport/zoom 缓解、精确 Node 24 重跑及全部平台下游证据继续保留，不部署、不审批、不合并。

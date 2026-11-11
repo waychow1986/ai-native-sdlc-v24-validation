@@ -151,12 +151,16 @@ export function buildApp(
     await reply.code(404).type("text/plain").send("Not Found");
   });
 
-  app.setErrorHandler(async (error, _request, reply) => {
+  app.setErrorHandler(async (error, request, reply) => {
     if (record(error).code === "FST_ERR_CTP_BODY_TOO_LARGE") {
       await reply.code(413).send({ error: "payload_too_large" });
       return;
     }
     app.log.error({ error: "internal_error" }, "request_failed");
+    if (request.routeOptions.url === "/api/status") {
+      await reply.code(500).send({ error: "status_unavailable" });
+      return;
+    }
     await reply.code(500).send({ error: "internal_error" });
   });
 
