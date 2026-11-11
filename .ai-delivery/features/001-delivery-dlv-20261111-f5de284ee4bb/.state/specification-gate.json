@@ -1,17 +1,5 @@
 {
   "stage": "specification",
-  "passed": false,
-  "findings": [
-    {
-      "id": "SPEC-SELF-001",
-      "severity": "high",
-      "scope": "self",
-      "artifact": "spec.md",
-      "owner": "specification",
-      "summary": "自动化持久性门禁遗漏服务重启",
-      "recommendation": "将创建、六种状态转换和删除在受控服务重启后的保持纳入自动化覆盖要求、验收场景、通过条件和逐项证据。",
-      "route": "current_stage",
-      "reasonType": "coverage"
-    }
-  ]
+  "passed": true,
+  "findings": []
 }
