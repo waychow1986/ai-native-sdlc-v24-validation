@@ -10,8 +10,8 @@
 ## 依赖关系
 
 - Phase 1 无前置依赖；`T001` 完成后，其余 Setup 任务可并行。
-- Phase 2 依赖全部 Setup 任务；其中测试先行，`T012`—`T015` 分别依赖对应测试。
-- 各 User Story 的测试依赖 Phase 2，可在文件互不冲突时并行；该故事的生产实现必须等待该故事全部先行测试落盘。
+- Phase 2 依赖全部 Setup 任务；其中测试先行，`T012`—`T017` 分别依赖对应测试或已验证的基础实现。
+- 各 User Story 的测试依赖 `T017` 完成，可在文件互不冲突时并行；该故事的生产实现必须等待该故事全部先行测试落盘。
 - User Story 按 `US-001` 至 `US-006` 顺序形成可演示增量；后续故事的界面实现显式依赖前一故事的界面增量。
 - Phase 9 依赖全部 User Story，实现 Coding 所负责的 Candidate、部署契约和下游自动化输入，不依赖远程部署或审批结果。
 
@@ -35,38 +35,40 @@
 - [ ] T013 实现共享 wire types、错误码、JSON Schema 与 OpenAPI 生成入口；以 T010 通过且生成 OpenAPI 3.1 artifact 为证据（`packages/contracts/src/common.ts`、`packages/contracts/src/errors.ts`、`packages/contracts/src/openapi.ts`、`packages/contracts/src/index.ts`；来源：`TD-009`、Interface 与契约；依赖：T010）
 - [ ] T014 实现严格配置、数据库连接池、脱敏结构化日志、安全 header 与 Fastify 应用装配基础；以 T011 通过且日志样本不含 secret、标题或说明为证据（`apps/server/src/config.ts`、`apps/server/src/db/pool.ts`、`apps/server/src/logging.ts`、`apps/server/src/security.ts`、`apps/server/src/app.ts`；来源：`TD-001`、治理与技术约束、安全与 Secret、配置与可观测性；依赖：T011—T013）
 - [ ] T015 建立真实 PostgreSQL、Fastify、浏览器、故障注入及按需求 ID 输出证据的共用测试夹具；以夹具可独立启动、清理且不记录任务内容或凭据为证据（`tests/helpers/postgres.ts`、`tests/helpers/server.ts`、`tests/helpers/browser.ts`、`tests/helpers/evidence.ts`；来源：验证环境责任矩阵、`NFR-008`、`IQA-011`；依赖：T012—T014）
+- [ ] T016 为统一集合冻结锁编写真实 PostgreSQL integration 测试，覆盖普通 mutation 的 shared transaction lock、诊断比对的 exclusive session lock、`finally` 显式释放、shared/shared 并行、exclusive 与 shared 相互等待及释放后继续；以并发连接的阻塞/放行顺序、锁释放和超时清理断言为证据（`tests/integration/collection-freeze-lock.test.ts`；来源：`design.md` 数据流、状态、并发与生命周期及配置、可观测性与运维；依赖：T015）
+- [ ] T017 实现供创建、状态变更、删除和业务诊断共同使用的集合冻结 advisory key、shared transaction lock 与 exclusive session lock/release；以 T016 在真实 PostgreSQL 17 上通过且唯一算法路径不存在锁泄漏为证据（`apps/server/src/tasks/collection-freeze-lock.ts`；来源：`design.md` 第 131、192 行集合冻结决策；依赖：T016）
 
 ## Phase 3：US1 - 集中查看任务进度
 
 ### 测试
 
-- [ ] T016 [P] [US1] 为 `GET /api/v1/tasks`、单项读取、排序、三状态 wire value、普通任务字段和读取错误编写 contract 测试；以运行 server、共享 schema、client 与 OpenAPI 一致为证据（`tests/contract/tasks-read.contract.test.ts`；来源：`US-001`、`FR-001`、`FR-006`、`FR-009`、API contract；依赖：T015）
-- [ ] T017 [P] [US1] 为普通任务过滤、稳定排序、完整集合读取和数据库失败映射编写真实 PostgreSQL integration 测试；以 probe 永不出现在普通集合且失败不伪装为空集合为证据（`tests/integration/tasks-read.repository.test.ts`；来源：`US-001`、`FR-001`、`FR-006`、`IQA-001`、`IQA-007`；依赖：T015）
-- [ ] T018 [P] [US1] 为加载、空状态、首项创建引导、三列任务及读取失败恢复编写 Playwright functional 测试；以 `IQA-001` 和读取恢复的用户可见记录为证据（`tests/functional/us1-board-read.spec.ts`；来源：`IQA-001`、`IQA-007`、`AC-001`、`AC-007`；依赖：T015）
-- [ ] T019 [P] [US1] 编写从空 PostgreSQL 启动同源应用、准备三状态数据并由浏览器完整读取的 end-to-end 场景；以真实 browser/server/database 的任务集合对照为证据（`tests/e2e/us1-board-read.e2e.spec.ts`；来源：`US-001`、`IQA-001`、Constitution 测试要求；依赖：T015）
-- [ ] T020 [P] [US1] 为 `loading/empty/loaded/load_error/refreshing` 状态机和最后确认快照保留编写 focused unit 测试；以失败与刷新转换表全部通过为证据（`tests/unit/board-read-state.test.ts`；来源：`FR-006`、`FR-009`、数据流与状态；依赖：T015）
+- [ ] T018 [P] [US1] 为 `GET /api/v1/tasks`、单项读取、排序、三状态 wire value、普通任务字段和读取错误编写 contract 测试；以运行 server、共享 schema、client 与 OpenAPI 一致为证据（`tests/contract/tasks-read.contract.test.ts`；来源：`US-001`、`FR-001`、`FR-006`、`FR-009`、API contract；依赖：T017）
+- [ ] T019 [P] [US1] 为普通任务过滤、稳定排序、完整集合读取和数据库失败映射编写真实 PostgreSQL integration 测试；以 probe 永不出现在普通集合且失败不伪装为空集合为证据（`tests/integration/tasks-read.repository.test.ts`；来源：`US-001`、`FR-001`、`FR-006`、`IQA-001`、`IQA-007`；依赖：T017）
+- [ ] T020 [P] [US1] 为加载、空状态、首项创建引导、三列任务及读取失败恢复编写 Playwright functional 测试；以 `IQA-001` 和读取恢复的用户可见记录为证据（`tests/functional/us1-board-read.spec.ts`；来源：`IQA-001`、`IQA-007`、`AC-001`、`AC-007`；依赖：T017）
+- [ ] T021 [P] [US1] 编写从空 PostgreSQL 启动同源应用、准备三状态数据并由浏览器完整读取的 end-to-end 场景；以真实 browser/server/database 的任务集合对照为证据（`tests/e2e/us1-board-read.e2e.spec.ts`；来源：`US-001`、`IQA-001`、Constitution 测试要求；依赖：T017）
+- [ ] T022 [P] [US1] 为 `loading/empty/loaded/load_error/refreshing` 状态机和最后确认快照保留编写 focused unit 测试；以失败与刷新转换表全部通过为证据（`tests/unit/board-read-state.test.ts`；来源：`FR-006`、`FR-009`、数据流与状态；依赖：T017）
 
 ### 实现
 
-- [ ] T021 [US1] 定义任务读取 schema 与 API client 类型并注册到共享导出/OpenAPI；以 T016 的读取 contract 断言通过为证据（`packages/contracts/src/tasks-read.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`FR-001`、`FR-006`、`FR-009`、API contract；依赖：T016—T020）
-- [ ] T022 [US1] 实现并注册普通任务 Repository、读取 service 与 GET routes；以 T016、T017 通过且 SQL 参数化、probe 被过滤为证据（`apps/server/src/tasks/task-repository.ts`、`apps/server/src/tasks/read-tasks.ts`、`apps/server/src/routes/tasks-read.ts`、`apps/server/src/app.ts`；来源：`TD-003`、`FR-001`、`FR-006`、`FR-009`；依赖：T021）
-- [ ] T023 [US1] 实现同源读取 client、看板加载/空/三状态/读取错误界面及完整纯文本任务卡；以 T018—T020 通过为证据（`apps/web/index.html`、`apps/web/src/api/tasks.ts`、`apps/web/src/state/board-state.ts`、`apps/web/src/components/Board.tsx`、`apps/web/src/main.tsx`；来源：`US-001`、`FR-001`、`FR-006`、`NFR-007`、`IQA-001`；依赖：T022）
+- [ ] T023 [US1] 定义任务读取 schema 与 API client 类型并注册到共享导出/OpenAPI；以 T018 的读取 contract 断言通过为证据（`packages/contracts/src/tasks-read.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`FR-001`、`FR-006`、`FR-009`、API contract；依赖：T018—T022）
+- [ ] T024 [US1] 实现并注册普通任务 Repository、读取 service 与 GET routes；以 T018、T019 通过且 SQL 参数化、probe 被过滤为证据（`apps/server/src/tasks/task-repository.ts`、`apps/server/src/tasks/read-tasks.ts`、`apps/server/src/routes/tasks-read.ts`、`apps/server/src/app.ts`；来源：`TD-003`、`FR-001`、`FR-006`、`FR-009`；依赖：T023）
+- [ ] T025 [US1] 实现同源读取 client、看板加载/空/三状态/读取错误界面及完整纯文本任务卡；以 T020—T022 通过为证据（`apps/web/index.html`、`apps/web/src/api/tasks.ts`、`apps/web/src/state/board-state.ts`、`apps/web/src/components/Board.tsx`、`apps/web/src/main.tsx`；来源：`US-001`、`FR-001`、`FR-006`、`NFR-007`、`IQA-001`；依赖：T024）
 
 ## Phase 4：US2 - 创建任务
 
 ### 测试
 
-- [ ] T024 [P] [US2] 为创建请求、首次 `201`、成功重放 `200`、标题错误、operation 引用和同键异请求 `409` 编写 contract 测试（`tests/contract/tasks-create.contract.test.ts`；来源：`US-002`、`FR-002`、`FR-003`、`FR-007`—`FR-009`、API contract；依赖：T015）
-- [ ] T025 [P] [US2] 为创建事务、幂等 advisory lock、同键并发重放、owner 回滚接管和确定性拒绝记录编写真实 PostgreSQL integration 测试（`tests/integration/tasks-create.repository.test.ts`；来源：`TD-004`、`FR-002`、`FR-003`、`FR-009`、Quickstart；依赖：T015）
-- [ ] T026 [P] [US2] 为有/无说明创建、空/纯空白/1/120/121 grapheme 标题和可理解反馈编写 Playwright functional 测试（`tests/functional/us2-create-task.spec.ts`；来源：`IQA-002`、`IQA-003`、`AC-002`、`AC-003`；依赖：T015）
-- [ ] T027 [P] [US2] 编写浏览器经真实 API 与 PostgreSQL 创建任务并重新读取的 end-to-end 场景；以初始 `pending`、持久内容和成功反馈对照为证据（`tests/e2e/us2-create-task.e2e.spec.ts`；来源：`US-002`、`IQA-002`、`FR-002`、`FR-007`；依赖：T015）
-- [ ] T028 [P] [US2] 为 ECMAScript trim、`Intl.Segmenter` grapheme 计数、内部空白保留与说明归一化编写 focused unit 测试（`tests/unit/task-title-validation.test.ts`；来源：`TD-005`、`FR-003`、领域规则；依赖：T015）
+- [ ] T026 [P] [US2] 为创建请求、首次 `201`、成功重放 `200`、标题错误、operation 引用和同键异请求 `409` 编写 contract 测试（`tests/contract/tasks-create.contract.test.ts`；来源：`US-002`、`FR-002`、`FR-003`、`FR-007`—`FR-009`、API contract；依赖：T017）
+- [ ] T027 [P] [US2] 为创建事务、幂等 advisory lock、集合 shared lock、同键并发重放、owner 回滚接管和确定性拒绝记录编写真实 PostgreSQL integration 测试（`tests/integration/tasks-create.repository.test.ts`；来源：`TD-004`、`FR-002`、`FR-003`、`FR-009`、Quickstart、集合冻结决策；依赖：T017）
+- [ ] T028 [P] [US2] 为有/无说明创建、空/纯空白/1/120/121 grapheme 标题和可理解反馈编写 Playwright functional 测试（`tests/functional/us2-create-task.spec.ts`；来源：`IQA-002`、`IQA-003`、`AC-002`、`AC-003`；依赖：T017）
+- [ ] T029 [P] [US2] 编写浏览器经真实 API 与 PostgreSQL 创建任务并重新读取的 end-to-end 场景；以初始 `pending`、持久内容和成功反馈对照为证据（`tests/e2e/us2-create-task.e2e.spec.ts`；来源：`US-002`、`IQA-002`、`FR-002`、`FR-007`；依赖：T017）
+- [ ] T030 [P] [US2] 为 ECMAScript trim、`Intl.Segmenter` grapheme 计数、内部空白保留与说明归一化编写 focused unit 测试（`tests/unit/task-title-validation.test.ts`；来源：`TD-005`、`FR-003`、领域规则；依赖：T017）
 
 ### 实现
 
-- [ ] T029 [US2] 定义创建、幂等 operation、replay 和标题错误 schema 并注册到共享导出/OpenAPI；以 T024 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-create.ts`、`packages/contracts/src/operations.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`TD-009`、创建 API contract；依赖：T024—T028）
-- [ ] T030 [US2] 实现并注册 grapheme 校验、canonical request hash、幂等事务与创建 route；以 T024、T025、T028 通过且无重复 mutation 或遗留 `processing` 为证据（`apps/server/src/tasks/task-validation.ts`、`apps/server/src/idempotency/operation-repository.ts`、`apps/server/src/idempotency/request-hash.ts`、`apps/server/src/tasks/create-task.ts`、`apps/server/src/routes/tasks-create.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`TD-005`、`FR-002`、`FR-003`、`FR-009`；依赖：T029）
-- [ ] T031 [US2] 实现受控创建表单、client 即时校验、服务端权威错误和成功反馈；以 T026、T027 通过且非法输入不改变集合为证据（`apps/web/src/components/CreateTaskForm.tsx`、`apps/web/src/state/create-task.ts`；来源：`US-002`、`FR-002`、`FR-003`、`FR-007`；依赖：T023、T030）
+- [ ] T031 [US2] 定义创建、幂等 operation、replay 和标题错误 schema 并注册到共享导出/OpenAPI；以 T026 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-create.ts`、`packages/contracts/src/operations.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`TD-009`、创建 API contract；依赖：T026—T030）
+- [ ] T032 [US2] 实现并注册 grapheme 校验、canonical request hash、幂等事务、统一集合 shared lock 与创建 route；以 T016、T026、T027、T030 通过且无重复 mutation、锁泄漏或遗留 `processing` 为证据（`apps/server/src/tasks/task-validation.ts`、`apps/server/src/idempotency/operation-repository.ts`、`apps/server/src/idempotency/request-hash.ts`、`apps/server/src/tasks/collection-freeze-lock.ts`、`apps/server/src/tasks/create-task.ts`、`apps/server/src/routes/tasks-create.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`TD-005`、`FR-002`、`FR-003`、`FR-009`、集合冻结决策；依赖：T017、T031）
+- [ ] T033 [US2] 实现受控创建表单、client 即时校验、服务端权威错误和成功反馈；以 T028、T029 通过且非法输入不改变集合为证据（`apps/web/src/components/CreateTaskForm.tsx`、`apps/web/src/state/create-task.ts`；来源：`US-002`、`FR-002`、`FR-003`、`FR-007`；依赖：T025、T032）
 
 ## Phase 5：US3 - 推进任务
 
