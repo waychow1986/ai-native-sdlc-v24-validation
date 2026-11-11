@@ -10,15 +10,15 @@
 
 ## 内部自检
 
-已检查全部任务的阶段划分、依赖顺序、准确路径、测试先行关系和完成证据。任务清单整体具备明确编号、来源、依赖、路径和任务级证据，但有三处会阻塞 Coding 交接：集合冻结并发机制没有形成测试先行的实现任务闭环；Phase 9 的运行生命周期与静态资源行为没有先行自动化验证；OCI Candidate 只有构建证据，缺少设计要求的容器运行验证。
+已检查全部 71 项任务的完整性、依赖顺序、准确路径、test-first 顺序、可执行性和完成证据。任务总体按 Setup、Foundational、User Story 和 Candidate 收尾组织，服务端、契约、数据库及主要验收场景具有明确的先测后实现关系；但前端增量缺少必要装配路径，且 OCI image 任务没有先行测试和充分完成证据，尚未达到实施就绪状态。
 
 ## 直接前置一致性检查
 
-已逐项对照已批准 `design.md`，并仅使用 `spec.md` 核对继承的验收场景追踪。User Story、API、数据模型、幂等恢复、业务诊断、性能工具、需求映射及部署契约总体忠实派生。以下问题均为明确 Design 内容在当前任务清单中的覆盖或排序缺口，责任归属 `task-planning`；未发现符合严格上游例外条件的 Design 歧义、矛盾、不可实现、不安全或治理冲突。
+已逐项对照已批准 `design.md` 的组件根路径、前端组合边界、单一 OCI image 决策、验证环境责任和部署要求，并使用 `spec.md` 核对继承的验收场景追踪。发现的问题均为清晰 Technical Solution 的任务覆盖或顺序缺口，责任属于当前 `task-planning` 阶段，不满足上游例外条件。
 
 ## 阻塞项
 
-### TASK-SELF-001 集合冻结锁缺少测试先行的实现闭环
+### TASK-SELF-001 前端故事增量缺少可执行的装配路径
 
 - **严重性：** `high`
 - **范围：** `self`
@@ -26,10 +26,10 @@
 - **责任 Agent：** `task-planning`
 - **路由：** `current_stage`
 - **原因类型：** `coverage`
-- **证据：** `design.md` 第 131 行要求所有普通任务 mutation 获取集合冻结 shared advisory lock，业务诊断以 exclusive lock 冻结普通集合；第 192 行又以该锁保证数据库快照与 HTTP 集合摘要可比。当前 T030、T038、T046 的创建、状态变更和删除实现均未要求 shared lock；唯一明确检查集合冻结的 T057 位于这些实现之后，违反清单第 7 行的测试先行规则，也无法在实现前约束三类 mutation。
-- **修复建议：** 在三类 mutation 实现之前安排覆盖 shared/exclusive 集合锁、释放和并发行为的先行测试，并在 T030、T038、T046 或独立的准确路径任务中明确实现统一集合锁算法；调整依赖，使相关生产实现必须等待该测试落盘。
+- **证据：** T025 将看板入口固定在 `apps/web/src/components/Board.tsx` 与 `apps/web/src/main.tsx`，但后续 T033、T041、T049、T056 只列出新增表单、任务卡、删除对话框、反馈组件及各自状态文件，均未列出需要修改的既有页面或组合根路径；T057 也只列出两个 CSS 文件，没有列出任何样式导入路径。按任务声明的准确改动路径实施时，创建、状态变更、删除、恢复反馈及响应式/可访问样式无法接入已渲染应用；若在 T025 预先引用尚不存在的后续模块，又会破坏 US1 先行测试和可演示增量。该缺口阻塞 `FR-002`、`FR-004`、`FR-005`、`FR-007`、`FR-009`、`FR-010` 及对应 IQA 场景。
+- **修复建议：** 为各前端实现任务补充实际需要修改的组合根、任务卡、API client 和样式入口准确路径，并调整依赖，使每个 User Story 在其实现任务完成后即可独立构建、运行和通过该故事的先行测试。
 
-### TASK-SELF-002 运行生命周期与静态交付行为未按 test-first 规划
+### TASK-SELF-002 OCI image 任务违反 test-first 且完成证据不足
 
 - **严重性：** `high`
 - **范围：** `self`
@@ -37,20 +37,9 @@
 - **责任 Agent：** `task-planning`
 - **路由：** `current_stage`
 - **原因类型：** `incomplete`
-- **证据：** T065 直接实现 migration/server 启动入口、终止信号排空、静态资源缓存策略和 SPA fallback，但此前 T009—T064 没有任务以准确测试路径验证这些行为；T065 的完成证据仅为本地启动后端点同端口工作，不能验证排空、缓存策略或 fallback。该安排违反 `tasks-implementation.md` 第 7 行“测试任务必须位于对应生产实现任务之前”，也不足以证明 `design.md` 第 37、133、208—214 行的生命周期与交付约束。
-- **修复建议：** 在 T065 前增加具有准确路径和可执行证据的先行测试任务，分别覆盖 migration 启动约束、终止排空、入口 HTML/哈希静态资源缓存和 SPA fallback，并让 T065 显式依赖这些测试。
-
-### TASK-SELF-003 OCI Candidate 缺少可执行的容器运行验证任务
-
-- **严重性：** `high`
-- **范围：** `self`
-- **制品：** `tasks-implementation.md`
-- **责任 Agent：** `task-planning`
-- **路由：** `current_stage`
-- **原因类型：** `coverage`
-- **证据：** `design.md` 第 241 行要求容器验证构建 image、启动容器、检查 `/health/live`、`/health/ready`、`/health/business`，并确认业务诊断 probe 不暴露到 `/api/v1/tasks`。T066 的证据只有 `docker build` 与 image history/环境 secret 检查；T067 只验证 `runtime/deployment.json` 的 schema 和分类命令。清单没有提供容器启动、数据库/migration 前置、健康检查及 probe 隔离验证的准确执行路径、依赖和完成证据。
-- **修复建议：** 在 T066 之后、T067 完成前增加准确路径的 Candidate 容器验证任务，声明数据库与 migration 前置、容器启动和清理、三个健康端点及普通任务集合 probe 隔离断言，并以真实命令输出和退出码作为完成证据。
+- **证据：** `design.md` 第 208 行要求 multi-stage Dockerfile 固定 Node 24.x patch、在 build stage 执行静态分析和生产构建，并保证 runtime stage 仅含生产依赖、编译产物且使用非 root 用户。T069 先实现 `Dockerfile`，其后 T070 才创建 Candidate 容器验证，违反本制品第 7 行的测试先于生产实现规则；T070 仅断言 migration、三个健康端点和 probe 隔离，未验证固定 patch 一致性、build-stage 静态分析、非 root 身份或 runtime 仅含生产依赖。T069 自身的 build、history 与环境检查也不能证明这些独立要求，导致关键生产候选约束缺少失败先行测试及可判定完成证据。
+- **修复建议：** 在 T069 前增加或前移可执行的 image 结构与运行约束测试，覆盖 Node patch 一致性、build-stage 必需步骤、非 root runtime 和生产依赖/产物边界；让 T069 依赖该先行测试，并以其通过作为完成证据。
 
 ## 通过条件
 
-修复上述三项后重新执行 `task-planning` 门禁：集合冻结机制形成测试先行且覆盖三类 mutation 的任务闭环；T065 的全部运行行为具有先行自动化验证；构建出的 OCI Candidate 具有可执行的容器运行与健康/probe 隔离验证。重新检查不得引入 Design 清单外路径或把下游远程验收结果作为 Coding 前置条件。
+修复上述全部阻塞项后，重新执行 `task-planning` 阶段门禁；只有前端各故事具备完整准确的装配路径，且 OCI image 约束具有先行测试、正确依赖和可判定完成证据时，当前阶段方可通过。
