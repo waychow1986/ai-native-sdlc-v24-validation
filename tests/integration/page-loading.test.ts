@@ -15,7 +15,7 @@ describe("page loading integration", () => {
   });
 
   it("makes one same-origin status request and remains loading while it is pending", async () => {
-    const app = buildApp();
+    const app = buildApp(undefined, { registerStatusRoutes: false });
     app.get("/api/status", async (_request, reply) => {
       await new Promise(() => undefined);
       return reply.send();

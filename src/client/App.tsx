@@ -7,10 +7,24 @@ interface LoadingState {
   generation: number;
 }
 
-interface BeginAction {
-  type: "begin";
+interface SuccessState {
+  kind: "success";
   generation: number;
+  status: "ok";
 }
+
+type StatusViewState = LoadingState | SuccessState;
+
+type StatusAction =
+  | {
+      type: "begin";
+      generation: number;
+    }
+  | {
+      type: "succeed";
+      generation: number;
+      status: "ok";
+    };
 
 export const initialStatusState: LoadingState = {
   kind: "loading",
@@ -18,17 +32,26 @@ export const initialStatusState: LoadingState = {
 };
 
 export function statusReducer(
-  state: LoadingState,
-  action: BeginAction,
-): LoadingState {
-  if (action.generation <= state.generation) {
+  state: StatusViewState,
+  action: StatusAction,
+): StatusViewState {
+  if (action.generation < state.generation) {
     return state;
   }
-  return { kind: "loading", generation: action.generation };
+  if (action.type === "begin") {
+    return action.generation === state.generation
+      ? state
+      : { kind: "loading", generation: action.generation };
+  }
+  return {
+    kind: "success",
+    generation: action.generation,
+    status: action.status,
+  };
 }
 
 interface AppProps {
-  requestStatus?: (signal: AbortSignal) => Promise<void>;
+  requestStatus?: (signal: AbortSignal) => Promise<"ok">;
 }
 
 export function App({
@@ -39,7 +62,13 @@ export function App({
   useEffect(() => {
     const controller = new AbortController();
     dispatch({ type: "begin", generation: 1 });
-    void requestStatus(controller.signal).catch(() => undefined);
+    void requestStatus(controller.signal)
+      .then((status) => {
+        if (!controller.signal.aborted) {
+          dispatch({ type: "succeed", generation: 1, status });
+        }
+      })
+      .catch(() => undefined);
     return () => controller.abort();
   }, [requestStatus]);
 
@@ -48,7 +77,7 @@ export function App({
       <h1>最小流程验证</h1>
       <section aria-label="当前状态">
         <p role="status" aria-live="polite">
-          {state.kind === "loading" ? "正在获取状态" : ""}
+          {state.kind === "loading" ? "正在获取状态" : state.status}
         </p>
       </section>
     </main>

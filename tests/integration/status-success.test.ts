@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 
+import { createElement } from "react";
+
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -27,7 +29,7 @@ describe("status success integration", () => {
       }),
     );
 
-    render(<App />);
+    render(createElement(App));
     try {
       await waitFor(() =>
         expect(screen.getByRole("status").textContent).toBe("ok"),

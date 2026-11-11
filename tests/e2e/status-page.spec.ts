@@ -6,7 +6,7 @@ test("IQA-001 loads the single status page and keeps a pending request visible",
   context,
   page,
 }, testInfo) => {
-  const app = buildApp();
+  const app = buildApp(undefined, { registerStatusRoutes: false });
   let requestCount = 0;
   let releaseStatus = (): void => undefined;
   const pendingStatus = new Promise<void>((resolve) => {
