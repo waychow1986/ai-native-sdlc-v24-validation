@@ -30,9 +30,9 @@
 
 看板固定呈现“待处理”“进行中”“已完成”三个带文字标题的区域；宽屏使用三列，窄屏与 200% 放大时按同一顺序纵向排列。创建表单始终可由键盘到达；每张任务卡显示完整标题、非空说明、文字状态、可选择另外两个状态的原生控件和删除按钮。删除使用具有初始焦点、焦点约束、Esc 取消和焦点归还的模态确认；成功、失败与结果未知反馈通过可见消息和适当的 ARIA live region 发布，状态不依赖颜色表达。
 
-每个写请求携带客户端生成的 UUID `Idempotency-Key`。服务端在同一数据库事务中锁定幂等键、变更任务并保存不含任务内容的操作结果。响应丢失时，客户端先查询操作结果并重新读取任务集合；只有操作记录不存在且当前集合证明未生效时，才以原键重试。这样在不引入队列或分布式事务的前提下满足 `FR-009`。
+每个写请求携带客户端生成的 UUID `Idempotency-Key`。服务端在单一数据库事务开始后，先对该 UUID 的确定性 64-bit 摘要取得 PostgreSQL transaction-level advisory lock，再检查或创建幂等记录；摘要碰撞最多使无关 key 串行，不影响正确性，主键仍负责最终唯一性。锁持有至提交或回滚，因此首次并发提交、操作 mutation 和结果记录形成一个互斥原子单元。响应丢失时，客户端查询操作结果；该查询也先取得同一 advisory lock，必然等待在途首次事务结束，随后再重新读取任务集合。只有操作记录不存在且权威集合显示未生效时，才以原键重试。这样在不引入队列或分布式事务的前提下满足 `FR-009`。
 
-Fastify 暴露进程存活、依赖就绪和业务诊断三类状态。业务诊断在专用 advisory lock 下创建带内部探针标记的任务，依次验证读取、状态变更、删除及重新读取，并保证普通任务 API 永不返回探针数据；任何断言、清理或超时失败均返回“不可用”。诊断响应只包含整体状态、受影响能力、检查时间和相关性 ID。
+Fastify 暴露进程存活、依赖就绪和业务诊断三类状态。业务诊断以 loopback HTTP 请求穿过真实 Fastify 路由、hook、schema 和业务 adapter，分别断言业务请求被接受及已知普通任务集合被完整读取；完整性通过数据库权威快照与 HTTP 响应的普通任务数量和规范化 SHA-256 摘要比对，不在响应、日志或指标中输出集合或摘要输入。随后诊断创建带内部探针标记的任务，依次验证创建、重新读取、状态变更、重新读取、删除及最终不存在，并保证普通任务 API 永不返回探针数据。任何独立断言、清理或超时失败均返回“不可用”；诊断响应只包含整体状态、受影响能力、检查时间和相关性 ID。
 
 应用启动时只验证配置和数据库连接，不在多副本中自动迁移。部署流程在接流量前以同一 image 单独运行 migration；成功后再启动应用副本。静态资源使用内容哈希和长期缓存，入口 HTML 禁止长期缓存，以避免新旧前后端 contract 混用。
 
@@ -43,10 +43,10 @@ Fastify 暴露进程存活、依赖就绪和业务诊断三类状态。业务诊
 | TD-001 | Node.js 24 LTS、TypeScript 5.9、React 19、Vite 7、Fastify 5 | 单语言、单进程实现空仓库中的小型 CRUD，减少构建与运行复杂度 | .NET 10 + React：类型与工具成熟但增加第二套工具链；未选 | 技术基线、`FR-001`—`FR-011` |
 | TD-002 | 单一 OCI image，同源提供 SPA 与 REST/JSON | 避免 CORS、服务拆分和分布式一致性；保留桌面与移动端同等能力 | 前后端独立部署：没有独立扩缩容需求；未选 | Constitution、`FR-010` |
 | TD-003 | PostgreSQL 17、显式 SQL migration、`node-postgres` | 事务、持久化、行锁和真实重启验证直接支持已确认结果 | SQLite + 持久卷：限制副本与平台文件锁；内存存储：不能满足重启持久性 | `FR-008`、`NFR-001` |
-| TD-004 | UUID 幂等键、操作表、事务提交和重新读取协调结果未知 | 允许在响应丢失后判断是否生效并安全重试，不依赖客户端猜测 | 仅重试 HTTP：会重复创建；optimistic UI：会制造虚假成功 | `FR-009`、`NFR-002` |
+| TD-004 | UUID 幂等键、transaction-level advisory lock、唯一操作记录与原子事务 | 首次并发请求先互斥再 mutation；查询会等待在途事务，响应丢失后可确定重放、冲突或安全重试 | 只依赖操作表唯一冲突：冲突发生前可能重复 mutation；仅重试 HTTP：会重复创建；optimistic UI：会制造虚假成功 | `FR-009`、`NFR-002` |
 | TD-005 | `Intl.Segmenter('und', {granularity:'grapheme'})` 计数字素簇，ECMAScript `trim()` 去首尾空白 | 与“用户可感知字符”和空白规则一致，Node 24 无需额外 Unicode 库 | UTF-16 code unit/code point：会误计组合字符 | `FR-003`、领域规则 |
 | TD-006 | React 受控表单、语义 HTML、CSS Grid/Flex 响应式布局、原生 dialog 语义的受控确认组件 | 以最少依赖覆盖 320—1440 像素、200% 放大、键盘与屏幕阅读器 | 拖拽作为唯一状态操作：依赖精细指点且不利于可访问性；未选 | `FR-005`、`FR-010`、`NFR-003`、`NFR-005` |
-| TD-007 | 普通 API 隐藏的持久化诊断任务执行真实 CRUD | 验证真实业务链路且不向团队成员展示探针内容 | 只查数据库连接：不能满足 `FR-011`；对普通任务执行探针：会污染看板 | `FR-011`、`NFR-006` |
+| TD-007 | loopback HTTP 入口断言、普通集合快照摘要比对和 API 隐藏的持久化探针 CRUD | 独立验证请求接受、集合完整读取和三类写操作，且不向团队成员或诊断输出展示任务内容 | 只查数据库连接或直接调用 application service：不能覆盖业务入口及完整读取；对普通任务执行探针：会污染看板 | `FR-011`、`NFR-006` |
 | TD-008 | 平台中立 OCI + PostgreSQL 部署契约 | 已批准输入未指定云 provider，避免擅自新增外部产品，同时保持下游部署可执行 | 立即固定 Azure/AWS/GCP：缺少批准的 landing zone 与资源约束 | 技术基线、Constitution |
 | TD-009 | API contract 由共享 TypeScript schema 定义，OpenAPI 3.1 在构建时生成并做兼容性检查 | 前后端、contract test 与运行接口使用单一结构来源 | 手写多份类型：容易漂移；GraphQL：对固定 CRUD 范围过重 | `FR-001`—`FR-011` |
 | TD-010 | 不使用前端 optimistic mutation；成功响应后重新读取或采用带版本的服务端结果 | 反馈始终对应已提交结果，网络不确定时保持最后确认快照 | 先移动卡片再回滚：会暂时表达未经确认的结果 | `FR-007`、`FR-009`、`NFR-002` |
@@ -74,19 +74,26 @@ Fastify 暴露进程存活、依赖就绪和业务诊断三类状态。业务诊
 |---|---|---|
 | `key` | UUID，主键 | 对应 `Idempotency-Key` |
 | `kind` | `create_task`、`change_status`、`delete_task` | 操作类型 |
-| `request_hash` | SHA-256 | 对规范化 method、path 和 body 求摘要，防止同键复用不同请求 |
-| `task_id` | UUID | 目标或已创建任务 ID |
-| `outcome` | `succeeded` | 只在业务 mutation 同一事务提交时存在 |
+| `request_hash` | SHA-256 | 对 method、实际 path 和 canonical JSON body 求摘要，防止同键复用不同请求 |
+| `state` | `processing`、`completed` | `processing` 只存在于持锁的未提交事务；提交前必须变为 `completed` |
+| `task_id` | nullable UUID | 目标或预生成的创建任务 ID |
+| `outcome` | nullable `succeeded`、`rejected` | 完成后的确定性业务结果 |
+| `response_status` | nullable integer | 原确定性 HTTP 状态，用于重放 |
+| `error_code` | nullable text | `rejected` 时保存不含任务内容的稳定错误码 |
 | `result_status` | nullable task status | 状态变更结果；不保存标题或说明 |
 | `created_at` | `timestamptz` | 诊断和稳定读取使用 |
+| `completed_at` | nullable `timestamptz` | 确定性结果完成时间 |
 
-操作记录与业务结果具有相同生命周期并持久保留，以保证刷新和服务重启后的恢复；当前范围不提供对外清理策略。相同 key 与相同请求返回原确定性结果，不重复 mutation；相同 key 与不同 request hash 返回 `409 IDEMPOTENCY_KEY_REUSED`。
+request hash 的 canonical body 使用 UTF-8 JSON：对象 key 按 Unicode code point 升序、数组保持顺序、字符串保持请求值、无 body 使用 JSON `null`；method 使用大写，path 使用包含资源 UUID 的实际 `/api/v1` path，不含 query。传输/schema 校验在事务前完成，失败不创建操作记录；通过后不得更换 hash 规则。
+
+操作生命周期固定为 `absent → processing（未提交且持锁）→ completed/succeeded | completed/rejected`，或任意事务异常时 `processing → rollback → absent`。操作记录与成功业务结果在同一事务提交并持久保留；确定性领域拒绝不执行 mutation，但以 `completed/rejected` 提交，当前范围不提供对外清理策略。相同 key 与相同 hash 重放已保存的状态码、操作引用及成功结果引用或错误码，不重复 mutation；创建成功重放不复制任务内容，而返回 `ReplayResult`，客户端按 `task_id` 重新读取当前权威结果。相同 key 与不同 hash 在任何 mutation 前返回 `409 IDEMPOTENCY_KEY_REUSED`。
 
 ### 状态不变量
 
-- 创建事务插入 `pending` 任务和对应操作记录；任一插入失败则全部回滚。
-- 状态事务锁定目标普通任务，验证目标状态不同，更新状态、时间和版本并插入操作记录；其他字段不变。
-- 删除事务锁定目标普通任务，删除任务并插入操作记录；取消删除完全停留在浏览器，不发送 DELETE。
+- 每个 schema 有效的写请求先 `BEGIN`，取得 `pg_advisory_xact_lock`，读取已有操作；无记录时插入 `processing`。创建事务再插入 `pending` 任务并完成操作记录；任一步失败则全部回滚。
+- 状态事务在取得幂等锁并建立 `processing` 后锁定目标普通任务，验证目标状态不同，更新状态、时间和版本并完成操作记录；其他字段不变。
+- 删除事务在取得幂等锁并建立 `processing` 后锁定目标普通任务，删除任务并完成操作记录；取消删除完全停留在浏览器，不发送 DELETE。
+- 确定性领域拒绝将操作完成为 `rejected` 后提交；数据库断连、deadlock/serialization 重试耗尽、进程终止或其他非确定性失败回滚任务与操作记录。等待同 key 的请求随后取得锁：若前事务提交则重放或报摘要冲突，若前事务回滚则成为唯一 owner 并执行；不会观察或遗留已提交的 `processing`。
 - probe 数据始终带 `is_probe=true`，不会进入普通读取、单项读取、任务计数或性能验收数据。
 - 数据库唯一约束、check constraint 和领域校验共同保证枚举、幂等键及 probe 隔离；migration 与应用版本必须匹配。
 
@@ -118,9 +125,9 @@ Fastify 暴露进程存活、依赖就绪和业务诊断三类状态。业务诊
 
 首次加载时 UI 进入 `loading`，成功后保存服务端完整快照；空数组进入带创建引导的 `empty`，读取失败进入 `load_error`，不得显示空看板。重新获取期间保留最后确认快照并明确标识正在刷新；只有新快照成功后替换。
 
-写操作状态为 `idle → submitting → succeeded | failed | unknown → reconciling → applied | not_applied`。`succeeded` 仅来自服务端确定性成功响应；连接中断、客户端超时或无法解析响应进入 `unknown`，不改变最后确认快照。协调先以幂等键查询操作：存在成功记录时重新获取任务/集合并显示已生效；不存在时重新获取集合并按 task ID、目标状态或删除目标判断未生效，再开放使用原 key 的安全重试。协调本身失败则保持 `unknown` 并仅提供“重新检查”，不开放新操作。
+写操作状态为 `idle → submitting → succeeded | failed | unknown → reconciling → applied | not_applied`。`succeeded` 仅来自服务端确定性成功响应；连接中断、客户端超时或无法解析响应进入 `unknown`，不改变最后确认快照。协调先以幂等键查询操作；查询取得与写事务相同的 advisory lock，因此会等待在途 owner 提交或回滚，不会把未提交操作误判为不存在。`succeeded` 记录触发任务/集合重新读取并显示已生效，`rejected` 记录恢复原确定性失败；记录不存在时重新获取集合并按预生成 task ID、目标状态或删除目标判断当前未生效，再开放使用原 key 的安全重试。协调本身失败则保持 `unknown` 并仅提供“重新检查”，不开放新操作。
 
-Fastify 每个请求从连接池获取连接。单任务 mutation 使用数据库事务与 `SELECT ... FOR UPDATE`；不同任务可并发，针对同一任务的提交按锁获取顺序串行。规格没有批准冲突解决承诺，因此 API 返回事务完成时的权威结果，客户端随后重新读取；不存在的任务返回确定性 `404`。数据库连接池每实例上限由部署配置提供，默认实现值为 10；该值是可调运行参数而非产品承诺。
+Fastify 每个请求从连接池获取连接。幂等 advisory key 固定为 UUID 文本 SHA-256 的前 64 bit 按有符号 bigint 解释，所有写入与 operation 查询必须使用同一函数；碰撞只产生额外等待。操作表主键是第二道不可绕过的唯一性约束。单任务 mutation 另使用 `SELECT ... FOR UPDATE`；不同幂等键、不同任务可并发，针对同一任务的提交按任务行锁获取顺序串行。所有普通任务 mutation 还取得集合冻结锁的 shared transaction-level advisory lock；业务诊断仅在普通集合完整性比对期间取得对应 exclusive session-level lock，随后释放再执行探针写入，避免自锁。规格没有批准冲突解决承诺，因此 API 返回事务完成时的权威结果，客户端随后重新读取；不存在的任务返回确定性 `404`。数据库连接池每实例上限由部署配置提供，默认实现值为 10；该值是可调运行参数而非产品承诺。
 
 浏览器生成写操作 key 并在该次未决操作完成前保存在 `sessionStorage`，刷新后可继续协调；不在浏览器持久化任务内容。服务重启不影响 PostgreSQL 中任务及操作记录。应用收到终止信号后停止接收新请求、等待在途请求完成至平台终止窗口并关闭连接池；未提交事务由数据库回滚。
 
@@ -134,15 +141,15 @@ Fastify 每个请求从连接池获取连接。单任务 mutation 使用数据�
 |---|---|---|---|
 | `GET /api/v1/tasks` | 无 body | `200 {"data":{"tasks":Task[]}}` | `FR-001`、`FR-006`、`FR-009` |
 | `GET /api/v1/tasks/{id}` | UUID path | `200 {"data":{"task":Task}}` | 结果未知协调 |
-| `POST /api/v1/tasks` | header 幂等键；`{"title":string,"description"?:string}` | `201 {"data":{"task":Task,"operation":OperationRef}}`；重放为 `200` | `FR-002`、`FR-003`、`FR-007`—`FR-009` |
-| `PATCH /api/v1/tasks/{id}/status` | header 幂等键；`{"status":TaskStatus}` | `200 {"data":{"task":Task,"operation":OperationRef}}` | `FR-004`、`FR-007`—`FR-009` |
-| `DELETE /api/v1/tasks/{id}` | header 幂等键；无 body | `200 {"data":{"deletedTaskId":uuid,"operation":OperationRef}}` | `FR-005`、`FR-007`—`FR-009` |
-| `GET /api/v1/operations/{key}` | UUID path | `200 {"data":{"operation":OperationRef}}` 或 `404 OPERATION_NOT_FOUND` | `FR-009` |
+| `POST /api/v1/tasks` | header 幂等键；`{"title":string,"description"?:string}` | 首次成功 `201 {"data":{"task":Task,"operation":OperationRef}}`；成功重放 `200 ReplayResult` | `FR-002`、`FR-003`、`FR-007`—`FR-009` |
+| `PATCH /api/v1/tasks/{id}/status` | header 幂等键；`{"status":TaskStatus}` | 首次成功 `200 {"data":{"task":Task,"operation":OperationRef}}`；成功重放 `200 ReplayResult` | `FR-004`、`FR-007`—`FR-009` |
+| `DELETE /api/v1/tasks/{id}` | header 幂等键；无 body | 首次成功 `200 {"data":{"deletedTaskId":uuid,"operation":OperationRef}}`；成功重放 `200 ReplayResult` | `FR-005`、`FR-007`—`FR-009` |
+| `GET /api/v1/operations/{key}` | UUID path；服务端先等待同 key 在途事务 | `200 {"data":{"operation":OperationRef}}` 或事务结束后 `404 OPERATION_NOT_FOUND` | `FR-009` |
 | `GET /health/live` | 无 body | 进程事件循环可响应时 `200 {"status":"alive"}` | 部署存活检查 |
 | `GET /health/ready` | 无 body | migration 版本匹配且数据库可查询时 `200 {"status":"ready"}`，否则 `503` | 部署接流量门禁 |
 | `GET /health/business` | 无 body | `200/503 {"status":"available"|"unavailable","affectedCapabilities":string[],"checkedAt":string,"correlationId":string}` | `FR-011` |
 
-`Task` 只含 `id,title,description,status,createdAt,updatedAt,version`，绝不暴露 `is_probe`。`OperationRef` 只含 `key,kind,taskId,outcome,resultStatus,createdAt`，不含标题或说明。
+`Task` 只含 `id,title,description,status,createdAt,updatedAt,version`，绝不暴露 `is_probe`。`OperationRef` 只含 `key,kind,taskId,state,outcome,responseStatus,errorCode,resultStatus,createdAt,completedAt`，不含标题或说明；对外只可能出现 `completed`。`ReplayResult` 为 `{"data":{"replayed":true,"operation":OperationRef}}`，客户端必须按 operation 引用重新读取当前任务或集合后才更新 UI。
 
 错误统一为：
 
@@ -181,7 +188,9 @@ Fastify 启用严格 CSP（默认仅自身来源，禁止 object 与 frame，脚
 
 应用暴露内部 Prometheus 文本指标端点仅在平台能限制运维访问时启用；否则保持关闭，避免本次擅自增加公开运维接口。必需的可观测证据来自 stdout 日志与三个健康端点。指标若启用，只含请求计数、按路由模板/状态码的耗时、连接池状态和诊断结果，不含 task ID 或任务内容。未批准外部 telemetry backend，故设计不绑定或部署任何日志、指标、trace 产品。
 
-业务诊断使用数据库 advisory lock 防止并发探针，并通过与普通任务相同的 application service、Repository、事务和提交后重新读取路径执行，只由内部 probe context 设置 `is_probe=true`。探针依次提交创建、完整读取、状态变更、重新读取、删除、最终不存在检查，并在 `finally` 清理遗留 probe；任一步失败、超时或清理不完整均为 `unavailable`。响应的 `affectedCapabilities` 只允许 `accept_request/read/create/change_status/delete` 枚举。
+业务诊断使用独立 session-level advisory lock 串行化整次诊断，并为每个断言设置总诊断 deadline 内的有界超时。第一项 `accept_request` 通过 Node 内置 HTTP client 向 `127.0.0.1:${PORT}` 发起真实 `GET /api/v1/tasks`，要求请求穿过 Fastify 路由、hook、schema 和普通任务读取 adapter，返回 `200`、有效 contract 与 `X-Request-Id`；loopback 不经过外部 ingress，因此 ingress/TLS 仍由部署检查负责。第二项 `read` 先取得集合冻结 exclusive lock，在一个 repeatable-read 数据库事务中读取全部 `is_probe=false` 任务并按 `created_at,id` canonicalize 为字段完整的 JSON 后计算数量与 SHA-256，再发起同一 HTTP 读取并按同规则计算数量与摘要；两者均相等才证明已知普通任务集合完整读取，之后立即释放冻结锁。摘要、任务字段和 HTTP body 只存在于诊断进程内存，禁止进入日志、metric、持久表或健康响应。
+
+完成两项独立断言并释放集合冻结锁后，诊断通过 loopback HTTP 和普通 application service/Repository/事务路径执行带内部签名 probe context 的创建、按 ID 读取、状态变更、重新读取、删除和最终 `404` 检查；只有 server 内部诊断调用可以设置 `is_probe=true`，外部 header 不能启用。每一步分别产生 `create`、`change_status`、`delete` 断言，并在 `finally` 以限定 `is_probe=true` 与本次 correlation ID 的清理事务删除遗留 probe。`accept_request`、`read`、三类写断言、超时和清理全部成功时才返回 `available`；任一失败或部分成功均返回 `503 unavailable`。响应的 `affectedCapabilities` 只允许 `accept_request/read/create/change_status/delete/diagnostic_cleanup` 枚举，不返回各断言输入、摘要、任务数量、任务 ID、标题、说明或凭据。
 
 ## SLO、限制、扩缩容、重试与恢复
 
@@ -189,7 +198,7 @@ Fastify 启用严格 CSP（默认仅自身来源，禁止 object 与 frame，脚
 
 应用无进程内业务状态，可运行一个或多个副本；PostgreSQL 是状态所有者。平台可按 HTTP 负载扩缩，但数据库连接总数必须满足“副本数 × 每实例池上限 + migration/诊断余量”不超过环境连接预算。没有获批的负载阈值或副本上下限，因此这些值由部署环境容量声明，且必须在性能验收前固定并记录。
 
-客户端读取失败允许用户触发重新获取。写操作只在确认未生效后以同一幂等键人工重试，不实施自动写重试；服务端对 serialization/deadlock 最多在同一请求内重试 2 次并使用 50 ms、100 ms 有界退避，超过后回滚并返回确定性 `503 TRANSIENT_FAILURE`。只有客户端无法获得该响应时才进入结果未知协调。数据库连接建立使用 driver 有界等待；不得以无限重试延迟明确反馈。
+客户端读取失败允许用户触发重新获取。写操作只在 operation 查询等待在途事务结束、确认无记录且权威集合显示当前未生效后，以同一幂等键人工重试，不实施客户端自动写重试。服务端对 serialization/deadlock 最多在同一请求内重试完整事务 2 次并使用 50 ms、100 ms 有界退避；每次重试都重新取得幂等锁，失败尝试不保留任务或 `processing` 记录。耗尽后回滚并返回 `503 TRANSIENT_FAILURE`，同 key 保持 absent，允许客户端按协调流程安全重试。只有客户端无法获得确定性响应时才进入结果未知协调。数据库连接建立与 advisory lock 等待均受请求 deadline 限制；等待超时回滚并返回 `503 TRANSIENT_FAILURE`，不得以无限等待延迟明确反馈。
 
 数据库事务保证单次操作原子性；服务重启前已提交结果保留，未提交事务回滚。PostgreSQL 备份、跨区恢复和灾难恢复目标未获批准，不作为本 Feature 承诺。业务诊断失败时 readiness/业务状态按各自语义报告，平台不得把仅有 liveness 成功解释为业务可用。
 
@@ -199,7 +208,7 @@ Fastify 启用严格 CSP（默认仅自身来源，禁止 object 与 frame，脚
 
 拓扑为 HTTPS ingress → 一个无状态 Fastify 应用部署 → PostgreSQL 17。数据库不对浏览器或公网开放。平台在应用接流量前，以同一 image 执行一次 `npm run db:migrate`；migration 身份与运行身份分离。应用仅在 migration checksum 与预期版本一致、数据库可查询后 readiness 成功。
 
-首个 migration 创建状态类型、`tasks`、`idempotent_operations`、约束及普通任务读取索引。后续 migration 遵循 expand/contract：先部署向后兼容 schema，再部署应用，确认稳定后方可在后续 Candidate 移除旧结构。本次空仓库无历史数据导入或转换。
+首个 migration 创建状态类型、`tasks`、`idempotent_operations`（含 state/outcome/响应元数据及状态一致性 check constraint）、约束及普通任务读取索引。约束禁止提交 `processing` 缺少必需字段之外的非法组合，并由 integration test 证明应用只提交 `completed`；`key` 主键兜底防止 advisory lock 实现偏差。后续 migration 遵循 expand/contract：先部署向后兼容 schema，再部署应用，确认稳定后方可在后续 Candidate 移除旧结构。本次空仓库无历史数据导入或转换。
 
 Rollout 先在新 Candidate 上运行 migration 和 readiness，再逐步接流量；失败即停止并恢复上一不可变 image。只要 migration 保持向后兼容，应用 rollback 不回滚数据库。若未来 migration 具有不可逆数据变换，必须在实施前提供独立备份/恢复方案；本次首建 migration 不需要数据 rollback。回退后重新执行业务诊断和关键功能验证，不能仅依赖容器启动。
 
@@ -210,11 +219,11 @@ active Feature 的 `runtime/deployment.json` 必须声明幂等 `developerSetupC
 | 验证类型 | 责任阶段 | 环境来源 | 依赖/凭据 | Coding 证据 | 下游结果 |
 |---|---|---|---|---|---|
 | 类型、lint、构建、schema 与 unit | Coding | clean runner + Node 24 LTS | `npm ci`，无云凭据 | 命令、退出码、需求映射 | 平台 CI 对 Candidate 重跑后的通过记录 |
-| PostgreSQL repository、migration、事务、幂等与 contract | Coding / 平台 CI | Docker Compose / CI 临时 PostgreSQL 17 | 短期本地数据库凭据 | 真实 PostgreSQL 执行结果、OpenAPI diff、`FR-002`—`FR-009` 映射 | clean runner 上同版本数据库的 integration 结果 |
+| PostgreSQL repository、migration、事务、幂等与 contract | Coding / 平台 CI | Docker Compose / CI 临时 PostgreSQL 17 | 短期本地数据库凭据 | 同 key 同/异摘要并发、等待/重放、确定性拒绝、事务回滚后接管、无遗留 processing、OpenAPI diff 与 `FR-002`—`FR-009` 映射 | clean runner 上同版本数据库的 integration 结果 |
 | 浏览器主要流程与输入安全 | Coding / 平台 CI | Playwright 浏览器 + 本地同源应用 + PostgreSQL 17 | 无云凭据 | `IQA-001`—`IQA-005`、读取恢复、特殊文本、五类标题和六向转换自动化记录 | 当前 Candidate 的 functional 结果 |
 | 结果未知六分支 | Coding / 平台 CI，最终由 Independent QA | Playwright 网络中断 + 真实 server/database；远程环境使用平台故障注入 | Coding 无云凭据；QA 使用批准环境权限 | 三类操作已生效/未生效分支、operation 查询与安全重试证据 | 精确部署 Candidate 上的真实中断与恢复结论 |
 | 刷新与受控服务重启持久性 | Independent QA | 远程 integration 的同一 image 与真实持久 PostgreSQL | 受控重启权限、环境数据库身份 | 自动化脚本、8 组需求映射与本地辅助结果，不声称完成远程验收 | `IQA-006` 的刷新、重启事件及逐项集合对照 |
-| 运行状态与部分失效 | Independent QA | 远程 integration + 批准的故障注入 | 部署、数据库故障控制权限 | 诊断 contract test 与本地故障辅助结果 | `IQA-009` 六种条件、内容保护和整体判定 |
+| 运行状态与部分失效 | Independent QA | 远程 integration + 批准的故障注入 | 部署、数据库故障控制权限 | loopback 请求接受、普通集合数量/摘要比对、五项能力及清理 contract test 与本地故障辅助结果 | `IQA-009` 全正常及请求接受、完整读取、三类写入各自失效条件、内容保护和整体判定 |
 | 320—1440 像素、200% 放大与 WCAG 2.2 AA | Coding 辅助；Independent QA 最终负责 | Playwright 视口矩阵；远程真实 Candidate | 浏览器与 axe-core，无业务 secret | 自动 viewport、键盘、axe-core 结果及场景映射 | `IQA-008` 与 `IQA-010` 的人工加自动完整验收 |
 | 10 组性能样本 | Independent QA | 固定配置远程 integration、真实 PostgreSQL、精确 Candidate | 数据准备和性能执行权限 | 可执行采样工具、分组格式与本地校准结果 | 每组 100 样本、排序表、第 95 值和阈值结论 |
 | 自动化覆盖审查 | Independent QA | 当前 Candidate 的 CI 与远程证据集合 | 只读证据访问 | `NFR-008` 逐项映射、通过率与 Candidate 标识 | `IQA-011` 覆盖率/通过率及证据完整性结论 |
@@ -226,7 +235,7 @@ active Feature 的 `runtime/deployment.json` 必须声明幂等 `developerSetupC
 
 最小人工验证从空数据库开始：观察加载及创建引导；创建带说明和不带说明的任务；确认空、纯空白与 121 grapheme 标题被拒绝，1 与 120 grapheme 被接受；依次覆盖六向状态转换；分别取消和确认删除。每次确认结果后刷新页面并核对快照。
 
-结果未知验证通过 Playwright 在请求提交后、响应到达前切断浏览器连接，分别使创建、状态变更和删除在数据库中已提交或未提交。恢复连接后只能使用 operation 与任务重新读取确认，已生效分支不得重复写入，未生效分支才可使用原幂等键重试。
+结果未知验证通过 Playwright 在请求提交后、响应到达前切断浏览器连接，分别使创建、状态变更和删除在数据库中已提交或未提交。恢复连接后 operation 查询必须等待原事务结束；已生效分支重放而不重复 mutation，回滚且未生效分支才可使用原幂等键重试。另以两个并发连接提交相同 key/相同 hash，证明后到请求等待并重放；提交相同 key/不同 hash，证明后到请求等待后返回 `409` 且不 mutation；强制 owner 回滚，证明等待请求取得 ownership、仅执行一次 mutation 且没有已提交 `processing`。
 
 执行 `npm run validate` 运行静态分析、构建和开发者测试；执行独立 npm scripts 运行 PostgreSQL integration 与 Playwright functional。Coding 只记录本地辅助结果，不执行云资源、远程重启、managed identity、网络、RBAC 或最终性能/WCAG 结论。容器验证使用 `docker build` 生成 image，启动后检查 `/health/live`、`/health/ready` 和 `/health/business`，并确认业务诊断不向 `/api/v1/tasks` 暴露 probe。
 
@@ -234,9 +243,9 @@ active Feature 的 `runtime/deployment.json` 必须声明幂等 `developerSetupC
 
 当 `/health/live` 失败时，检查进程退出原因、只读文件系统权限和端口绑定；由平台重启同一 digest，不先修改运行中容器。当 liveness 成功但 readiness 失败时，检查 schema version、数据库 DNS/TLS/连接额度和运行身份权限；禁止绕过 migration 或提升为数据库管理员。
 
-当 `/health/business` 为 `unavailable` 时，使用 correlation ID 查找已脱敏日志和 `affectedCapabilities`，依次确认请求接受、读取、创建、状态变更、删除及 probe 清理。不得查询或复制普通任务内容作为诊断步骤。遗留 probe 只可由内置诊断清理路径按 `is_probe=true` 处理，不得用无条件任务删除语句。
+当 `/health/business` 为 `unavailable` 时，使用 correlation ID 查找已脱敏日志和 `affectedCapabilities`，依次确认 loopback 业务请求接受、普通集合完整性摘要比对、创建、状态变更、删除及 probe 清理。日志只允许记录断言名称、结果、耗时和稳定错误码，不得记录普通集合数量、摘要、HTTP body 或任务内容。遗留 probe 只可由内置诊断清理路径按 `is_probe=true` 和 correlation ID 处理，不得用无条件任务删除语句。
 
-当用户报告结果未知时，保留页面中的操作 key，先查询 `/api/v1/operations/{key}`，再重新获取目标任务或全部集合。操作存在即按已生效处理；操作不存在且权威集合证明未生效时才使用原 key 重试。不得换新 key 重放创建。
+当用户报告结果未知时，保留页面中的操作 key，先查询 `/api/v1/operations/{key}`；查询会等待该 key 的在途事务结束。`succeeded` 时重新获取目标任务或集合并按已生效处理，`rejected` 时恢复原失败；操作不存在时再获取权威集合，确认当前未生效后才使用原 key 重试。不得换新 key 重放创建，也不得将 lock wait timeout 当作未生效。
 
 当性能退化时，按路由模板检查耗时、连接池等待、PostgreSQL query plan 和当前普通任务数；不得记录请求 body 或任务文本。优化必须保持 API 与产品行为，并按 10 个独立样本组重新验证。
 
