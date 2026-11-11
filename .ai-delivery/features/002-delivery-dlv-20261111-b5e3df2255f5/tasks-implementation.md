@@ -67,16 +67,16 @@
 
 ### 测试
 
-- [ ] T026 [P] [US3] 先编写 Fetch adapter 失败 contract test，覆盖网络失败、2500 ms 超时、非 200、错误 media type、无效 JSON、schema 不匹配、Abort 和不泄露内部错误（`tests/contract/status-client.test.ts`；来源：US-003、FR-004～FR-006、TD-005、外部 adapter Contract；依赖：T025；完成证据：每类失败均归一化且无技术错误进入用户结果）
-- [ ] T027 [P] [US3] 先编写真实本地进程中浏览器请求被阻断、解除阻断后通过页面按钮恢复、连续失败再恢复的 integration test（`tests/integration/status-recovery.test.ts`；来源：US-003、TD-007、IQA-003～IQA-005；依赖：T025；完成证据：真实请求 abort/恢复、每次按钮对应单次新请求及完整状态转换）
-- [ ] T028 [P] [US3] 先编写失败提示、唯一重试按钮、键盘/焦点、live/alert 感知、无敏感内部内容、无自动重试和连续失败边界的 functional test（`tests/functional/status-recovery.test.tsx`；来源：US-003、FR-004～FR-007、NFR-003～NFR-006、AC-004～AC-010、IQA-003～IQA-007；依赖：T025；完成证据：用户可见失败、重试、隐私、范围和 axe/键盘断言）
-- [ ] T029 [US3] 在现有 Playwright 文件中先追加 IQA-003～IQA-005、IQA-008 的失败、重试成功、连续失败恢复 end-to-end 场景，记录每次 3 秒门禁、成功/失败/恢复 3/3 和无自动请求（`tests/e2e/status-page.spec.ts`；来源：IQA-003～IQA-005、IQA-008、NFR-001～NFR-002、AC-004～AC-012；依赖：T022、T025；完成证据：同一本地验证对象的 trace、screenshot、原始时间及请求计数）
-- [ ] T030 [US3] 在现有 Playwright 文件中先追加 IQA-006 的正常、失败和重试完整旅程内容/操作清单与最小权限、隐私和范围外操作断言，并追加 IQA-007 的 axe-core、仅键盘重试、焦点可见、处理中/成功/失败状态可感知及非纯颜色自动化输入（`tests/e2e/status-page.spec.ts`；来源：IQA-006～IQA-007、FR-007、NFR-003～NFR-004、AC-009～AC-010、TD-006；依赖：T029；完成证据：真实本地应用与 Chromium 的三类旅程、axe、键盘、焦点及状态感知记录；人工辅助技术 WCAG 结论留给 Independent QA）
-- [ ] T031 [US3] 在现有 component 测试中先追加失败、人工重试、连续失败、递增 generation、处理中禁用重复请求及迟到响应丢弃的 focused unit test（`tests/component/App.test.tsx`；来源：US-003、FR-004～FR-006、TD-004、状态不变量 1～5；依赖：T023、T025；完成证据：reducer、DOM 和并发边界的确定性断言）
+- [x] T026 [P] [US3] 先编写 Fetch adapter 失败 contract test，覆盖网络失败、2500 ms 超时、非 200、错误 media type、无效 JSON、schema 不匹配、Abort 和不泄露内部错误（`tests/contract/status-client.test.ts`；来源：US-003、FR-004～FR-006、TD-005、外部 adapter Contract；依赖：T025；完成证据：每类失败均归一化且无技术错误进入用户结果）
+- [x] T027 [P] [US3] 先编写真实本地进程中浏览器请求被阻断、解除阻断后通过页面按钮恢复、连续失败再恢复的 integration test（`tests/integration/status-recovery.test.ts`；来源：US-003、TD-007、IQA-003～IQA-005；依赖：T025；完成证据：真实请求 abort/恢复、每次按钮对应单次新请求及完整状态转换）
+- [x] T028 [P] [US3] 先编写失败提示、唯一重试按钮、键盘/焦点、live/alert 感知、无敏感内部内容、无自动重试和连续失败边界的 functional test（`tests/functional/status-recovery.test.tsx`；来源：US-003、FR-004～FR-007、NFR-003～NFR-006、AC-004～AC-010、IQA-003～IQA-007；依赖：T025；完成证据：用户可见失败、重试、隐私、范围和 axe/键盘断言）
+- [x] T029 [US3] 在现有 Playwright 文件中先追加 IQA-003～IQA-005、IQA-008 的失败、重试成功、连续失败恢复 end-to-end 场景，记录每次 3 秒门禁、成功/失败/恢复 3/3 和无自动请求（`tests/e2e/status-page.spec.ts`；来源：IQA-003～IQA-005、IQA-008、NFR-001～NFR-002、AC-004～AC-012；依赖：T022、T025；完成证据：同一本地验证对象的 trace、screenshot、原始时间及请求计数）
+- [x] T030 [US3] 在现有 Playwright 文件中先追加 IQA-006 的正常、失败和重试完整旅程内容/操作清单与最小权限、隐私和范围外操作断言，并追加 IQA-007 的 axe-core、仅键盘重试、焦点可见、处理中/成功/失败状态可感知及非纯颜色自动化输入（`tests/e2e/status-page.spec.ts`；来源：IQA-006～IQA-007、FR-007、NFR-003～NFR-004、AC-009～AC-010、TD-006；依赖：T029；完成证据：真实本地应用与 Chromium 的三类旅程、axe、键盘、焦点及状态感知记录；人工辅助技术 WCAG 结论留给 Independent QA）
+- [x] T031 [US3] 在现有 component 测试中先追加失败、人工重试、连续失败、递增 generation、处理中禁用重复请求及迟到响应丢弃的 focused unit test（`tests/component/App.test.tsx`；来源：US-003、FR-004～FR-006、TD-004、状态不变量 1～5；依赖：T023、T025；完成证据：reducer、DOM 和并发边界的确定性断言）
 
 ### 实现
 
-- [ ] T032 [US3] 实现统一失败归一化、失败提示、唯一原生重试按钮、按钮触发的新 generation、重试处理中状态、连续失败可恢复及迟到结果防护（`src/client/status-client.ts`、`src/client/App.tsx`；来源：FR-004～FR-006、TD-004～TD-007、AC-004～AC-007；依赖：T026～T031；完成证据：T026～T031 通过且每次人工操作只产生一次请求）
+- [x] T032 [US3] 实现统一失败归一化、失败提示、唯一原生重试按钮、按钮触发的新 generation、重试处理中状态、连续失败可恢复及迟到结果防护（`src/client/status-client.ts`、`src/client/App.tsx`；来源：FR-004～FR-006、TD-004～TD-007、AC-004～AC-007；依赖：T026～T031；完成证据：T026～T031 通过且每次人工操作只产生一次请求）
 
 ## Phase 6：Polish
 
