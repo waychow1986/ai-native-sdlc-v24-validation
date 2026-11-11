@@ -28,6 +28,8 @@
 
 浏览器加载 Fastify 提供的版本化静态资源。React 应用维护“最后一次已确认的服务端快照”、当前加载状态、输入上下文和每项待确认操作；它不把 optimistic mutation 当作业务最终结果。所有读取和写入通过 `/api/v1` 完成。Fastify 使用 JSON Schema 校验传输结构，再由领域层执行 Unicode 标题规则、状态转换和错误映射。Repository 层通过 `node-postgres` 参数化 SQL 与 PostgreSQL 交互。
 
+看板固定呈现“待处理”“进行中”“已完成”三个带文字标题的区域；宽屏使用三列，窄屏与 200% 放大时按同一顺序纵向排列。创建表单始终可由键盘到达；每张任务卡显示完整标题、非空说明、文字状态、可选择另外两个状态的原生控件和删除按钮。删除使用具有初始焦点、焦点约束、Esc 取消和焦点归还的模态确认；成功、失败与结果未知反馈通过可见消息和适当的 ARIA live region 发布，状态不依赖颜色表达。
+
 每个写请求携带客户端生成的 UUID `Idempotency-Key`。服务端在同一数据库事务中锁定幂等键、变更任务并保存不含任务内容的操作结果。响应丢失时，客户端先查询操作结果并重新读取任务集合；只有操作记录不存在且当前集合证明未生效时，才以原键重试。这样在不引入队列或分布式事务的前提下满足 `FR-009`。
 
 Fastify 暴露进程存活、依赖就绪和业务诊断三类状态。业务诊断在专用 advisory lock 下创建带内部探针标记的任务，依次验证读取、状态变更、删除及重新读取，并保证普通任务 API 永不返回探针数据；任何断言、清理或超时失败均返回“不可用”。诊断响应只包含整体状态、受影响能力、检查时间和相关性 ID。
@@ -94,6 +96,7 @@ Fastify 暴露进程存活、依赖就绪和业务诊断三类状态。业务诊
 
 - `./package.json`
 - `./package-lock.json`
+- `./.nvmrc`
 - `./tsconfig.base.json`
 - `./eslint.config.js`
 - `./Dockerfile`
@@ -178,7 +181,7 @@ Fastify 启用严格 CSP（默认仅自身来源，禁止 object 与 frame，脚
 
 应用暴露内部 Prometheus 文本指标端点仅在平台能限制运维访问时启用；否则保持关闭，避免本次擅自增加公开运维接口。必需的可观测证据来自 stdout 日志与三个健康端点。指标若启用，只含请求计数、按路由模板/状态码的耗时、连接池状态和诊断结果，不含 task ID 或任务内容。未批准外部 telemetry backend，故设计不绑定或部署任何日志、指标、trace 产品。
 
-业务诊断使用数据库 advisory lock 防止并发探针。探针依次提交创建、完整读取、状态变更、重新读取、删除、最终不存在检查，并在 `finally` 清理遗留 probe；任一步失败或清理不完整均为 `unavailable`。响应的 `affectedCapabilities` 只允许 `accept_request/read/create/change_status/delete` 枚举。
+业务诊断使用数据库 advisory lock 防止并发探针，并通过与普通任务相同的 application service、Repository、事务和提交后重新读取路径执行，只由内部 probe context 设置 `is_probe=true`。探针依次提交创建、完整读取、状态变更、重新读取、删除、最终不存在检查，并在 `finally` 清理遗留 probe；任一步失败、超时或清理不完整均为 `unavailable`。响应的 `affectedCapabilities` 只允许 `accept_request/read/create/change_status/delete` 枚举。
 
 ## SLO、限制、扩缩容、重试与恢复
 
@@ -186,7 +189,7 @@ Fastify 启用严格 CSP（默认仅自身来源，禁止 object 与 frame，脚
 
 应用无进程内业务状态，可运行一个或多个副本；PostgreSQL 是状态所有者。平台可按 HTTP 负载扩缩，但数据库连接总数必须满足“副本数 × 每实例池上限 + migration/诊断余量”不超过环境连接预算。没有获批的负载阈值或副本上下限，因此这些值由部署环境容量声明，且必须在性能验收前固定并记录。
 
-客户端读取失败允许用户触发重新获取。写操作只在确认未生效后以同一幂等键人工重试，不实施自动写重试；服务端对 serialization/deadlock 最多在同一请求内重试 2 次并使用 50 ms、100 ms 有界退避，超过后返回结果未知的可恢复错误。数据库连接建立使用 driver 有界等待；不得以无限重试延迟明确反馈。
+客户端读取失败允许用户触发重新获取。写操作只在确认未生效后以同一幂等键人工重试，不实施自动写重试；服务端对 serialization/deadlock 最多在同一请求内重试 2 次并使用 50 ms、100 ms 有界退避，超过后回滚并返回确定性 `503 TRANSIENT_FAILURE`。只有客户端无法获得该响应时才进入结果未知协调。数据库连接建立使用 driver 有界等待；不得以无限重试延迟明确反馈。
 
 数据库事务保证单次操作原子性；服务重启前已提交结果保留，未提交事务回滚。PostgreSQL 备份、跨区恢复和灾难恢复目标未获批准，不作为本 Feature 承诺。业务诊断失败时 readiness/业务状态按各自语义报告，平台不得把仅有 liveness 成功解释为业务可用。
 
