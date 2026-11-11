@@ -240,13 +240,14 @@ Independent QA 的失败场景必须让浏览器发出的真实请求发生网�
 前置条件是受支持的 Node.js 24 LTS、npm 和用于容器 smoke 的 OCI-compatible runtime。Coding 完成后按以下顺序验证：
 
 1. `npm ci`
-2. `npm run check`
-3. `npm run build`
-4. `npm test`
+2. `npx --no-install playwright install --with-deps chromium`
+3. `npm run check`
+4. `npm run build`
+5. `npm test`
 
 `npm run check` 必须执行 TypeScript no-emit 检查与项目 lint；`npm run build` 必须生成前端静态产物和可执行服务端产物；`npm test` 必须串行聚合 component、API contract 和本地 Playwright 功能测试，任一失败即非零退出。Playwright 启动真实本地应用，通过路由 abort 形成网络失败，随后解除 abort 并只用页面“重试”按钮验证恢复。
 
-`runtime/deployment.json` 的 `developerSetupCommands` 声明 `npm ci`；`developerValidationCommands` 精确声明：
+`runtime/deployment.json` 的 `developerSetupCommands` 依次声明 `npm ci` 和 `npx --no-install playwright install --with-deps chromium`；`npx --no-install` 只执行 lockfile 已安装的本地 Playwright CLI，不临时解析或安装其他 package。`developerValidationCommands` 精确声明：
 
 - `staticAnalysis`: `npm run check`
 - `build`: `npm run build`
