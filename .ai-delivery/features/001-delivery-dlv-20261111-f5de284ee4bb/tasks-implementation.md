@@ -67,7 +67,7 @@
 ### 实现
 
 - [ ] T031 [US2] 定义创建、幂等 operation、replay 和标题错误 schema 并注册到共享导出/OpenAPI；以 T026 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-create.ts`、`packages/contracts/src/operations.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`TD-009`、创建 API contract；依赖：T026—T030）
-- [ ] T032 [US2] 实现并注册 grapheme 校验、canonical request hash、幂等事务、统一集合 shared lock 与创建 route；以 T016、T026、T027、T030 通过且无重复 mutation、锁泄漏或遗留 `processing` 为证据（`apps/server/src/tasks/task-validation.ts`、`apps/server/src/idempotency/operation-repository.ts`、`apps/server/src/idempotency/request-hash.ts`、`apps/server/src/tasks/collection-freeze-lock.ts`、`apps/server/src/tasks/create-task.ts`、`apps/server/src/routes/tasks-create.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`TD-005`、`FR-002`、`FR-003`、`FR-009`、集合冻结决策；依赖：T017、T031）
+- [ ] T032 [US2] 实现并注册 grapheme 校验、canonical request hash、幂等事务、使用 T017 统一路径的集合 shared lock 与创建 route；以 T016、T026、T027、T030 通过且无重复 mutation、锁泄漏或遗留 `processing` 为证据（`apps/server/src/tasks/task-validation.ts`、`apps/server/src/idempotency/operation-repository.ts`、`apps/server/src/idempotency/request-hash.ts`、`apps/server/src/tasks/create-task.ts`、`apps/server/src/routes/tasks-create.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`TD-005`、`FR-002`、`FR-003`、`FR-009`、集合冻结决策；依赖：T016、T017、T031）
 - [ ] T033 [US2] 实现受控创建表单、client 即时校验、服务端权威错误和成功反馈；以 T028、T029 通过且非法输入不改变集合为证据（`apps/web/src/components/CreateTaskForm.tsx`、`apps/web/src/state/create-task.ts`；来源：`US-002`、`FR-002`、`FR-003`、`FR-007`；依赖：T025、T032）
 
 ## Phase 5：US3 - 推进任务
@@ -83,7 +83,7 @@
 ### 实现
 
 - [ ] T039 [US3] 定义状态变更与错误 schema 并注册到共享导出/OpenAPI；以 T034 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-status.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`TD-009`、状态 API contract；依赖：T034—T038）
-- [ ] T040 [US3] 实现并注册带任务行锁、统一集合 shared lock、幂等记录、版本递增和有界事务重试的状态变更 service 与 route；以 T016、T034、T035、T038 通过为证据（`apps/server/src/tasks/collection-freeze-lock.ts`、`apps/server/src/tasks/change-task-status.ts`、`apps/server/src/routes/tasks-status.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`FR-004`、`FR-007`—`FR-009`、SLO 与重试、集合冻结决策；依赖：T017、T039）
+- [ ] T040 [US3] 实现并注册带任务行锁、使用 T017 统一路径的集合 shared lock、幂等记录、版本递增和有界事务重试的状态变更 service 与 route；以 T016、T034、T035、T038 通过为证据（`apps/server/src/tasks/change-task-status.ts`、`apps/server/src/routes/tasks-status.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`FR-004`、`FR-007`—`FR-009`、SLO 与重试、集合冻结决策；依赖：T016、T017、T039）
 - [ ] T041 [US3] 实现每张卡可选择另外两个状态的原生控件及确定性结果反馈；以 T036、T037 通过且界面不使用 optimistic mutation 为证据（`apps/web/src/components/TaskCard.tsx`、`apps/web/src/state/change-task-status.ts`；来源：`TD-006`、`TD-010`、`US-003`；依赖：T033、T040）
 
 ## Phase 6：US4 - 删除任务
@@ -99,7 +99,7 @@
 ### 实现
 
 - [ ] T047 [US4] 定义删除结果与 replay schema 并注册到共享导出/OpenAPI；以 T042 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/tasks-delete.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`TD-009`、删除 API contract；依赖：T042—T046）
-- [ ] T048 [US4] 实现并注册带任务行锁、统一集合 shared lock 和幂等 operation 的删除 service 与 route；以 T016、T042、T043 通过且取消路径无服务端 mutation 为证据（`apps/server/src/tasks/collection-freeze-lock.ts`、`apps/server/src/tasks/delete-task.ts`、`apps/server/src/routes/tasks-delete.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`FR-005`、`FR-007`—`FR-009`、集合冻结决策；依赖：T017、T047）
+- [ ] T048 [US4] 实现并注册带任务行锁、使用 T017 统一路径的集合 shared lock 和幂等 operation 的删除 service 与 route；以 T016、T042、T043 通过且取消路径无服务端 mutation 为证据（`apps/server/src/tasks/delete-task.ts`、`apps/server/src/routes/tasks-delete.ts`、`apps/server/src/app.ts`；来源：`TD-004`、`FR-005`、`FR-007`—`FR-009`、集合冻结决策；依赖：T016、T017、T047）
 - [ ] T049 [US4] 实现受控可访问删除确认组件和删除反馈状态；以 T044—T046 通过为证据（`apps/web/src/components/DeleteTaskDialog.tsx`、`apps/web/src/state/delete-task.ts`；来源：`TD-006`、`US-004`、`NFR-005`；依赖：T041、T048）
 
 ## Phase 7：US5 - 连续可靠地使用看板
@@ -131,7 +131,7 @@
 ### 实现
 
 - [ ] T063 [US6] 定义三类健康响应与固定受影响能力 schema 并注册到共享导出/OpenAPI；以 T058 通过并更新 OpenAPI artifact 为证据（`packages/contracts/src/health.ts`、`packages/contracts/src/index.ts`、`packages/contracts/src/openapi.ts`；来源：`TD-009`、健康 API contract；依赖：T058—T062）
-- [ ] T064 [US6] 实现并注册 live、migration-aware ready、使用统一集合 exclusive lock/release 的 loopback 业务诊断、普通集合摘要比对、内部 probe CRUD 和清理 routes；以 T016、T058—T062 通过且响应/日志均无任务内容、摘要、token 或凭据为证据（`apps/server/src/tasks/collection-freeze-lock.ts`、`apps/server/src/diagnostics/business-diagnostic.ts`、`apps/server/src/diagnostics/probe-context.ts`、`apps/server/src/routes/health.ts`、`apps/server/src/app.ts`；来源：`TD-007`、`FR-011`、`NFR-006`、配置与可观测性、集合冻结决策；依赖：T017、T063）
+- [ ] T064 [US6] 实现并注册 live、migration-aware ready、使用 T017 统一路径的集合 exclusive lock/release 的 loopback 业务诊断、普通集合摘要比对、内部 probe CRUD 和清理 routes；以 T016、T058—T062 通过且响应/日志均无任务内容、摘要、token 或凭据为证据（`apps/server/src/diagnostics/business-diagnostic.ts`、`apps/server/src/diagnostics/probe-context.ts`、`apps/server/src/routes/health.ts`、`apps/server/src/app.ts`；来源：`TD-007`、`FR-011`、`NFR-006`、配置与可观测性、集合冻结决策；依赖：T016、T017、T063）
 
 ## Phase 9：Polish
 
