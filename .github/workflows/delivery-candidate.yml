@@ -631,7 +631,9 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n "$namespace" set env deployment/candidate "${env_vars[@]}"
           deployment_patch="$(
-            jq -cn --argjson port "$port" '{
+            jq -cn \
+              --arg image "${{ steps.image.outputs.value }}" \
+              --argjson port "$port" '{
               spec: {
                 replicas: 1,
                 template: {
@@ -649,6 +651,7 @@ jobs:
                     },
                     containers: [{
                       name: "candidate",
+                      image: $image,
                       ports: [{name: "http", containerPort: $port}],
                       securityContext: {
                         allowPrivilegeEscalation: false,
