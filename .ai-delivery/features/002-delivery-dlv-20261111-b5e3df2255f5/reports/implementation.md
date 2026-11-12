@@ -525,3 +525,61 @@ active Feature `runtime/deployment.json` 仍准确声明 `npm ci`、`npx --no-in
 ### 实施结论
 
 **完成。** `CONV-002` 所需的固定 Node.js `24.22.2` setup、静态分析、build 与六类聚合测试证据已取得；最终完整声明序列 exit `0`。本 Session 仅稳定批准场景的开发者测试并追加真实证据，不修改产品行为、技术决策、任务 checkbox 或平台 workflow，到此停止，不部署、不审批、不合并。
+
+## Coding Session coding-attempt-02-batch-08-operation-027
+
+### 实施范围
+
+本 Session 采用 `coding-repair` 模式，定向调查 immutable Candidate `ecc5d1513945e4d2dfe058534de1fce54c1c5092` 的 `candidate-runtime-readiness` 失败。失败日志显示 Kubernetes Deployment 已成功 rollout，但公共 DNS 首次未解析，随后对 `/health/ready` 的全部请求均在建立 HTTP 响应前超时；同一次短路判断因此从未请求 `/candidate-identity`。
+
+为区分 Candidate runtime 缺陷与部署入口故障，本 Session 从相同根 `Dockerfile` 重建 production image，并从独立容器经 Docker bridge 网络访问 runtime 声明的端口、readiness 路径和 Candidate identity 路径。两个端点分别返回预期 `204` 与精确平台环境身份，应用日志确认监听容器网络地址并收到两次请求。没有复现 Candidate 代码、image、端口或 runtime contract 缺陷，因此未修改这些制品，也未以未经证据支持的改动掩盖平台 LoadBalancer/DNS 可达性失败。
+
+### 变更文件
+
+| 路径 | 变更 | 来源任务 |
+|---|---|---|
+| `.ai-delivery/features/002-delivery-dlv-20261111-b5e3df2255f5/reports/implementation.md` | 保持全部历史内容为不可变前缀，仅追加本 Session 的 readiness 调查、复现结果与阻塞结论 | `coding-repair` 失败证据；T035～T036 runtime 就绪契约 |
+
+未修改 `tasks-implementation.md` 的任何行或 checkbox；未修改应用代码、测试、`Dockerfile`、runtime contract、approved 制品或平台 workflow。
+
+### 需求与场景覆盖
+
+| Intent / Specification Scenario | 实现路径 | 测试路径 | 结果 |
+|---|---|---|---|
+| Runtime readiness / T035～T036 | `Dockerfile`、`src/server/index.ts`、`src/server/routes/health.ts`、active Feature `runtime/deployment.json`（均未修改） | `tests/contract/health.test.ts` 与独立容器 bridge smoke | contract 21/21 通过；production image 从独立容器访问 `/health/ready` 返回 `204`，访问 `/candidate-identity` 返回精确 Delivery ID 与 Candidate SHA |
+| `candidate-runtime-readiness` 失败 | Candidate 无实现变更 | 提供的 CI 日志与本地定向复现 | CI 公共入口未建立 HTTP 响应；相同 Candidate runtime 的容器网络访问成功，证据不支持 Candidate 侧修复 |
+
+### 执行命令与结果
+
+| 命令 | 环境 | 结果 | 证据 |
+|---|---|---|---|
+| `npm run check`（依赖恢复前） | Coding sandbox；初始 workspace | 失败，exit `1` | `node_modules/` 不完整，TypeScript 报缺少 `node` 与 `vitest/globals` 类型；按声明先执行 `npm ci`，未将失败隐藏为通过 |
+| `npm ci` | Coding sandbox；Node `v22.23.4`、npm `10.9.9` | 通过并保留 engine/deprecation warning | lockfile 安装 438 packages；audit 439 packages，0 vulnerabilities |
+| `npm run check` | Coding sandbox | 通过 | TypeScript no-emit 与零 warning ESLint 均 exit `0` |
+| `npm run build` | Coding sandbox | 通过 | 生成客户端 HTML/CSS/JS 与 `dist/server/index.js` |
+| `npm run test:contract -- --reporter=verbose` | Coding sandbox | 通过 | 4 个文件、21/21 contract 测试通过；readiness 与 Candidate identity 定向 contract 均通过 |
+| `docker build --tag minimal-status-page:readiness-repair .` | Docker 28；固定 `node:24.22.2-bookworm-slim` digest | 通过 | production image `sha256:221432667a130a6a787b666e229b1e92b7ad6ac1930c35f810810a0ac8bdd08c` 构建成功 |
+| 独立 `curlimages/curl:8.17.0` 容器经临时 Docker network 请求 production container | 容器间 bridge 网络；注入本次 Delivery ID 与失败 Candidate SHA | 通过 | `/health/ready` 返回成功空响应；`/candidate-identity` 返回 `{"deliveryId":"DLV-20261111-B5E3DF2255F5","candidateSha":"ecc5d1513945e4d2dfe058534de1fce54c1c5092"}`；runtime 用户为 `node`；服务日志显示监听 `172.18.0.2:3000` 并完成两次请求 |
+
+### Runtime 与下游门禁就绪制品
+
+根 `Dockerfile`、active Feature `runtime/deployment.json`、`/health/ready`、`/candidate-identity` 和 developer functional 脚本保持不变。定向复现证明 production image 以非 root 用户在声明端口接受其他容器的请求，readiness 与不可变身份 contract 正常。
+
+提供的 CI 日志只显示公共主机名先未解析、随后连接超时，没有 Candidate 返回的 HTTP 状态、body 或应用错误。该结果与可访问 Candidate 端口时的本地结果不同，当前证据将故障边界定位在 Candidate 之外的公共 LoadBalancer/DNS/集群网络路径；本 Session 无权修改 `.github/workflows/` 或平台基础设施。
+
+### 延后平台证据
+
+- 平台须在修复或确认公共入口后，对精确 Candidate 重新执行远程 readiness 与 immutable identity 检查；本地容器结果不能冒充该远程门禁。
+- registry image、远程 LoadBalancer/DNS 状态、集群 Service endpoints、网络策略实际流量、Independent QA、UAT、发布审批、Review 与 Merge 证据仍由下游平台阶段产生。
+- 本 Session 未访问、部署、修改或审批任何 Azure/集群资源。
+
+### 限制、剩余风险与阻塞项
+
+- 新阻塞：失败环境的公共地址在十分钟窗口内未向 Candidate 建立 HTTP 连接，而相同 production runtime 在独立容器网络可达。需要平台所有者检查 LoadBalancer external IP/backend、DNS annotation 生效时序、集群入口网络与 Service endpoints；这些路径属于受保护 workflow/平台基础设施，不在 Coding manifest 内。
+- 未获得失败 Pod 的日志、Service endpoints 或 LoadBalancer 诊断，因此不把某一具体平台组件虚构为已确认根因。
+- 明确的人类 Stage Gate override 所覆盖 `TASK-SELF-001`～`TASK-SELF-004` 风险继续按历史记录保留；既有缓解未被本 Session 改写或削弱。
+- 固定 Node image 的 npm engine warning保持既有非阻塞风险；本次 build 与定向验证均成功。
+
+### 实施结论
+
+**阻塞。** 本 Session 已完成 Candidate 侧最小确定性复现，未发现可由应用代码、测试、`Dockerfile` 或 runtime contract 修复的缺陷。production image 的跨容器 readiness 与精确 Candidate identity 均通过；CI 失败发生在公共入口尚未建立 HTTP 响应的边界。为避免无依据修改已通过的 Candidate，本 Session 仅追加真实证据并停止；后续必须由平台所有者修复或诊断受保护的 LoadBalancer/DNS/集群网络路径后重跑该门禁。不部署、不审批、不合并。
