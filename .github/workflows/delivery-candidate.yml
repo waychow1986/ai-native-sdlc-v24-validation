@@ -275,6 +275,11 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Set up kubelogin
+        uses: azure/use-kubelogin@v1
+        with:
+          kubelogin-version: v0.2.22
+
       - name: Build and push candidate image
         id: image
         shell: bash
@@ -318,6 +323,7 @@ jobs:
             --name "$cluster_name" \
             --overwrite-existing \
             --output none
+          kubelogin convert-kubeconfig -l azurecli
 
           namespace="qa-$(printf '%s' '${{ inputs.delivery_id }}' |
             tr '[:upper:]' '[:lower:]' |
