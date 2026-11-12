@@ -665,7 +665,7 @@ jobs:
             }'
           )"
           kubectl -n "$namespace" patch deployment candidate \
-            --type merge \
+            --type strategic \
             --patch "$deployment_patch"
           kubectl -n "$namespace" create service loadbalancer candidate \
             --tcp="80:$port" \
