@@ -23,8 +23,8 @@ on:
         description: Candidate health endpoint path
         required: true
         type: string
-      qa_branch:
-        description: Dedicated QA evidence branch
+      qa_evidence_branch:
+        description: Copilot QA evidence branch
         required: true
         type: string
       qa_plan_path:
@@ -49,10 +49,10 @@ jobs:
     name: Independent QA execution
     runs-on: ubuntu-latest
     steps:
-      - name: Check out dedicated QA branch
+      - name: Check out Copilot QA evidence branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.qa_branch }}
+          ref: ${{ inputs.qa_evidence_branch }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -88,7 +88,7 @@ jobs:
               grep -Fvx "$qa_script" || true
           )"
           if [[ -n "$unexpected" ]]; then
-            echo "QA branch contains changes outside the locked QA artifacts:" >&2
+            echo "QA evidence branch contains changes outside the locked QA artifacts:" >&2
             echo "$unexpected" >&2
             exit 1
           fi
@@ -242,4 +242,4 @@ jobs:
           git commit -m "Record independent QA execution"
           git push \
             "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-            "HEAD:${{ inputs.qa_branch }}"
+            "HEAD:${{ inputs.qa_evidence_branch }}"
