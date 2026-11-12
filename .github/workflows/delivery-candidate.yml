@@ -626,50 +626,40 @@ jobs:
               --command "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO \"$app_name\""
           fi
 
-          kubectl -n "$namespace" create deployment candidate \
-            --image="${{ steps.image.outputs.value }}" \
-            --dry-run=client -o yaml | kubectl apply -f -
-          kubectl -n "$namespace" set env deployment/candidate "${env_vars[@]}"
-          deployment_patch="$(
-            jq -cn \
+          deployment_manifest="$(
+            kubectl -n "$namespace" create deployment candidate \
+              --image="${{ steps.image.outputs.value }}" \
+              --dry-run=client -o json |
+            kubectl set env --local -f - "${env_vars[@]}" -o json |
+            jq \
               --arg image "${{ steps.image.outputs.value }}" \
-              --argjson port "$port" '{
-              spec: {
-                replicas: 1,
-                template: {
-                  metadata: {
-                    labels: {
-                      app: "candidate",
-                      "azure.workload.identity/use": "true"
-                    }
-                  },
-                  spec: {
-                    serviceAccountName: "candidate",
-                    securityContext: {
-                      runAsNonRoot: true,
-                      seccompProfile: {type: "RuntimeDefault"}
-                    },
-                    containers: [{
-                      name: "candidate",
-                      image: $image,
-                      ports: [{name: "http", containerPort: $port}],
-                      securityContext: {
-                        allowPrivilegeEscalation: false,
-                        capabilities: {drop: ["ALL"]}
-                      },
-                      resources: {
-                        requests: {cpu: "100m", memory: "256Mi"},
-                        limits: {cpu: "1", memory: "1Gi"}
-                      }
-                    }]
-                  }
+              --argjson port "$port" '
+              .spec.replicas = 1 |
+              .spec.strategy = {type: "Recreate"} |
+              .spec.template.metadata.labels += {
+                app: "candidate",
+                "azure.workload.identity/use": "true"
+              } |
+              .spec.template.spec.serviceAccountName = "candidate" |
+              .spec.template.spec.securityContext = {
+                runAsNonRoot: true,
+                seccompProfile: {type: "RuntimeDefault"}
+              } |
+              .spec.template.spec.containers[0] |= (
+                .name = "candidate" |
+                .image = $image |
+                .ports = [{name: "http", containerPort: $port}] |
+                .securityContext = {
+                  allowPrivilegeEscalation: false,
+                  capabilities: {drop: ["ALL"]}
+                } |
+                .resources = {
+                  requests: {cpu: "100m", memory: "256Mi"},
+                  limits: {cpu: "1", memory: "1Gi"}
                 }
-              }
-            }'
+              )'
           )"
-          kubectl -n "$namespace" patch deployment candidate \
-            --type strategic \
-            --patch "$deployment_patch"
+          printf '%s\n' "$deployment_manifest" | kubectl apply -f -
           kubectl -n "$namespace" create service loadbalancer candidate \
             --tcp="80:$port" \
             --dry-run=client -o yaml | kubectl apply -f -
