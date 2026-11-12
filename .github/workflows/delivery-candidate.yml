@@ -290,6 +290,33 @@ jobs:
           image="$registry.azurecr.io/$repository:${{ inputs.candidate_sha }}"
           az acr login --name "$registry"
           docker build --pull --tag "$image" .
+          image_user="$(docker image inspect --format '{{.Config.User}}' "$image")"
+          test -n "$image_user"
+          image_user="${image_user%%:*}"
+          if [[ "$image_user" =~ ^[0-9]+$ ]]; then
+            run_as_user="$image_user"
+          else
+            metadata_container="$(docker create "$image" /bin/true)"
+            metadata_directory="$(mktemp -d "$RUNNER_TEMP/candidate-image-user.XXXXXX")"
+            cleanup_image_metadata() {
+              status=$?
+              docker rm "$metadata_container" >/dev/null 2>&1 || true
+              rm -rf -- "$metadata_directory"
+              return "$status"
+            }
+            trap cleanup_image_metadata EXIT
+            docker cp "$metadata_container:/etc/passwd" "$metadata_directory/passwd"
+            run_as_user="$(
+              awk -F: -v user="$image_user" '$1 == user { print $3; exit }' \
+                "$metadata_directory/passwd"
+            )"
+            cleanup_image_metadata
+            trap - EXIT
+          fi
+          if [[ ! "$run_as_user" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::Candidate image user must resolve to a positive numeric UID." >&2
+            exit 1
+          fi
           docker push "$image"
           digest="$(
             az acr repository show \
@@ -301,6 +328,7 @@ jobs:
           test -n "$digest"
           echo "tagged=$image" >> "$GITHUB_OUTPUT"
           echo "value=$registry.azurecr.io/$repository@$digest" >> "$GITHUB_OUTPUT"
+          echo "run_as_user=$run_as_user" >> "$GITHUB_OUTPUT"
 
       - name: Deploy isolated AKS candidate namespace
         id: deployment
@@ -633,6 +661,7 @@ jobs:
             kubectl set env --local -f - "${env_vars[@]}" -o json |
             jq \
               --arg image "${{ steps.image.outputs.value }}" \
+              --argjson run_as_user "${{ steps.image.outputs.run_as_user }}" \
               --argjson port "$port" '
               .spec.replicas = 1 |
               .spec.strategy = {type: "Recreate"} |
@@ -643,6 +672,7 @@ jobs:
               .spec.template.spec.serviceAccountName = "candidate" |
               .spec.template.spec.securityContext = {
                 runAsNonRoot: true,
+                runAsUser: $run_as_user,
                 seccompProfile: {type: "RuntimeDefault"}
               } |
               .spec.template.spec.containers[0] |= (
