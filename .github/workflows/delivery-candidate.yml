@@ -361,7 +361,6 @@ jobs:
             tr '[:upper:]' '[:lower:]' |
             sed -E 's/[^a-z0-9-]+/-/g' |
             cut -c1-24)"
-          dns_label="$app_name"
           port="$(jq -r '.containerPort' "$ARTIFACT_ROOT/runtime/deployment.json")"
           identity_name="id-$app_name"
           identity_json="$(
@@ -693,22 +692,26 @@ jobs:
           kubectl -n "$namespace" create service loadbalancer candidate \
             --tcp="80:$port" \
             --dry-run=client -o yaml | kubectl apply -f -
-          kubectl -n "$namespace" annotate service candidate \
-            service.beta.kubernetes.io/azure-dns-label-name="$dns_label" \
-            --overwrite
           kubectl -n "$namespace" rollout status deployment/candidate --timeout=5m
-          cluster_location="$(
-            az aks show \
-              --resource-group "$cluster_resource_group" \
-              --name "$cluster_name" \
-              --query location \
-              --output tsv
-          )"
-          url="http://$dns_label.$cluster_location.cloudapp.azure.com"
+          public_ip=""
+          for attempt in $(seq 1 60); do
+            public_ip="$(
+              kubectl -n "$namespace" get service candidate \
+                --output=jsonpath='{.status.loadBalancer.ingress[0].ip}' \
+                2>/dev/null || true
+            )"
+            [[ -n "$public_ip" ]] && break
+            sleep 5
+          done
+          python3 -c \
+            'import ipaddress, sys; assert ipaddress.ip_address(sys.argv[1]).version == 4' \
+            "$public_ip"
+          url="http://$public_ip"
           echo "app_name=$app_name" >> "$GITHUB_OUTPUT"
           echo "cluster_resource_id=$cluster_resource_id" >> "$GITHUB_OUTPUT"
           echo "namespace=$namespace" >> "$GITHUB_OUTPUT"
           echo "image=${{ steps.image.outputs.value }}" >> "$GITHUB_OUTPUT"
+          echo "ingress_ip=$public_ip" >> "$GITHUB_OUTPUT"
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Verify deployed candidate health
