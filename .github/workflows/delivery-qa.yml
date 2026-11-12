@@ -121,9 +121,20 @@ jobs:
           set +e
           (
             cd "$work"
+            if [[ -f "$GITHUB_WORKSPACE/package.json" ]] &&
+              [[ -f "$GITHUB_WORKSPACE/package-lock.json" ]]; then
+              cp "$GITHUB_WORKSPACE/package.json" .
+              cp "$GITHUB_WORKSPACE/package-lock.json" .
+              timeout 5m npm ci --ignore-scripts --no-audit --no-fund
+              if [[ -x node_modules/.bin/playwright ]]; then
+                PLAYWRIGHT_BROWSERS_PATH="$work/.playwright" \
+                  timeout 5m ./node_modules/.bin/playwright install chromium
+              fi
+            fi
             timeout 15m env -i \
               PATH="$PATH" \
               HOME="$work" \
+              PLAYWRIGHT_BROWSERS_PATH="$work/.playwright" \
               QA_DELIVERY_ID="${{ inputs.delivery_id }}" \
               QA_CANDIDATE_SHA="${{ inputs.candidate_sha }}" \
               QA_BASE_URL="${{ inputs.candidate_url }}" \
