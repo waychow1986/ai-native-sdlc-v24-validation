@@ -1,0 +1,1 @@
+{"schemaVersion": 1, "nodeRunId": "nr_139a79a695e14901b091f185ef56f5bc", "stage": "coding", "outcome": "passed", "summary": "已按要求新增 docs/runner-poc.md，说明本次提交由 AIDelivery Hub Runner 启动的自托管 Claude Code Session 于 UTC 2026-11-14 生成。", "artifacts": [{"path": "docs/runner-poc.md"}]}
